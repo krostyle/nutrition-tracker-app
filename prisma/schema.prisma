@@ -11,7 +11,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum FoodSource {
@@ -27,6 +26,16 @@ model Food {
   externalId String?
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
+
+  // Nutrientes por 100g (kcal para calories, gramos, salvo sodium en mg)
+  calories     Float
+  protein      Float
+  carbs        Float
+  fat          Float
+  fiber        Float?
+  sugar        Float?
+  saturatedFat Float?
+  sodium       Float?
 
   @@unique([source, externalId])
 }

@@ -14,7 +14,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Show when="signed-in">
-        <div className="flex min-h-full flex-1">
+        <div className="flex flex-1">
           <AppSidebar />
           <main className="flex flex-1 flex-col overflow-x-hidden">{children}</main>
         </div>

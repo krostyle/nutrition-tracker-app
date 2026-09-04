@@ -21,11 +21,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <ClerkProvider>
-      <html
-        lang="en"
-        className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
-      >
-        <body className="min-h-full flex flex-col">{children}</body>
+      <html lang="en" className={`${inter.variable} ${geistMono.variable} antialiased`}>
+        <body className="flex min-h-screen flex-col">{children}</body>
       </html>
     </ClerkProvider>
   );

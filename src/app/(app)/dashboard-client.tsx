@@ -12,6 +12,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   createLogEntryAction,
   deleteLogEntryAction,
   getDaySummaryAction,
@@ -169,17 +176,18 @@ function AddEntryForm({
           value={selected ? selected.name : query}
           onChange={(e) => handleQueryChange(e.target.value)}
         />
-        <select
-          className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm"
-          value={mealType}
-          onChange={(e) => setMealType(e.target.value as MealType)}
-        >
-          {MEAL_TYPES.map((type) => (
-            <option key={type} value={type}>
-              {MEAL_LABELS[type]}
-            </option>
-          ))}
-        </select>
+        <Select value={mealType} onValueChange={(value) => setMealType(value as MealType)}>
+          <SelectTrigger className="w-36">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {MEAL_TYPES.map((type) => (
+              <SelectItem key={type} value={type}>
+                {MEAL_LABELS[type]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {!selected && results.length > 0 && (

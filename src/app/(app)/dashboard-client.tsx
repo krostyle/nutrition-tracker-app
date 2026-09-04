@@ -176,7 +176,11 @@ function AddEntryForm({
           value={selected ? selected.name : query}
           onChange={(e) => handleQueryChange(e.target.value)}
         />
-        <Select value={mealType} onValueChange={(value) => setMealType(value as MealType)}>
+        <Select
+          items={MEAL_LABELS}
+          value={mealType}
+          onValueChange={(value) => setMealType(value as MealType)}
+        >
           <SelectTrigger className="w-36">
             <SelectValue />
           </SelectTrigger>

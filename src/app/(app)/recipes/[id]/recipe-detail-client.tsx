@@ -58,7 +58,12 @@ export function RecipeDetailClient({ id }: { id: string }) {
           <CardDescription>{recipe.servings} porciones</CardDescription>
         </div>
         <div className="flex gap-2">
-          <Button render={<Link href={`/recipes/${id}/edit`} />} size="sm" variant="outline">
+          <Button
+            render={<Link href={`/recipes/${id}/edit`} />}
+            nativeButton={false}
+            size="sm"
+            variant="outline"
+          >
             Editar
           </Button>
           <Button size="sm" variant="outline" disabled={pending} onClick={handleDelete}>

@@ -18,7 +18,7 @@ export function RecipesClient() {
     <Card className="w-full max-w-lg">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Recetas</CardTitle>
-        <Button render={<Link href="/recipes/new" />} size="sm">
+        <Button render={<Link href="/recipes/new" />} nativeButton={false} size="sm">
           Nueva receta
         </Button>
       </CardHeader>

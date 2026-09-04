@@ -9,7 +9,7 @@ export default function NewRecipePage() {
   const router = useRouter();
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 p-8">
+    <div className="flex flex-1 flex-col items-center gap-6 p-8">
       <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle>Nueva receta</CardTitle>

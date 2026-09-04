@@ -27,7 +27,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <CardDescription>Iniciá sesión para continuar.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button render={<Link href="/sign-in" />} className="w-full">
+              <Button render={<Link href="/sign-in" />} nativeButton={false} className="w-full">
                 Iniciar sesión
               </Button>
             </CardContent>

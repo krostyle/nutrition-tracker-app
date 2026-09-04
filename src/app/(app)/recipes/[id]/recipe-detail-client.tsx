@@ -52,12 +52,12 @@ export function RecipeDetailClient({ id }: { id: string }) {
 
   return (
     <Card className="w-full max-w-lg">
-      <CardHeader className="flex flex-row items-start justify-between gap-4">
-        <div>
-          <CardTitle>{recipe.name}</CardTitle>
+      <CardHeader className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
+        <div className="min-w-0">
+          <CardTitle className="truncate">{recipe.name}</CardTitle>
           <CardDescription>{recipe.servings} porciones</CardDescription>
         </div>
-        <div className="flex gap-2">
+        <div className="flex shrink-0 gap-2">
           <Button
             render={<Link href={`/recipes/${id}/edit`} />}
             nativeButton={false}

@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
-import { ChefHat, LayoutDashboard, Search, Target } from "lucide-react";
+import { ChefHat, LayoutDashboard, Search, Target, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -13,16 +14,38 @@ const NAV_ITEMS = [
   { href: "/goals", label: "Metas", icon: Target },
 ] as const;
 
-export function AppSidebar() {
+export function AppSidebar({
+  open,
+  onNavigate,
+}: {
+  open: boolean;
+  onNavigate: () => void;
+}) {
   const pathname = usePathname();
 
   return (
-    <aside className="sticky top-0 flex h-screen w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-      <div className="flex items-center gap-2 px-4 py-5">
-        <span className="flex size-6 items-center justify-center rounded-md bg-sidebar-primary text-xs font-bold text-sidebar-primary-foreground">
-          N
-        </span>
-        <span className="text-sm font-semibold">Nutrition Tracker</span>
+    <aside
+      className={cn(
+        "fixed inset-y-0 left-0 z-40 flex h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-transform duration-200 md:sticky md:top-0 md:w-56 md:translate-x-0",
+        open ? "translate-x-0" : "-translate-x-full",
+      )}
+    >
+      <div className="flex items-center justify-between gap-2 px-4 py-5">
+        <div className="flex items-center gap-2">
+          <span className="flex size-6 items-center justify-center rounded-md bg-sidebar-primary text-xs font-bold text-sidebar-primary-foreground">
+            N
+          </span>
+          <span className="text-sm font-semibold">Nutrition Tracker</span>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Cerrar menú"
+          onClick={onNavigate}
+          className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:hidden"
+        >
+          <X className="size-4" />
+        </Button>
       </div>
       <nav className="flex flex-1 flex-col gap-1 px-2">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
@@ -31,6 +54,7 @@ export function AppSidebar() {
             <Link
               key={href}
               href={href}
+              onClick={onNavigate}
               className={cn(
                 "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 active

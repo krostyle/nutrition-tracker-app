@@ -81,8 +81,8 @@ function EntryRow({
 
   return (
     <div className="flex items-center justify-between gap-2 border-b py-2 text-sm last:border-b-0">
-      <div className="flex-1">
-        <p>{entry.food.name}</p>
+      <div className="min-w-0 flex-1">
+        <p className="truncate">{entry.food.name}</p>
         <p className="text-muted-foreground">
           {editing ? (
             <span className="inline-flex items-center gap-1">
@@ -100,7 +100,7 @@ function EntryRow({
           )}
         </p>
       </div>
-      <div className="flex gap-1">
+      <div className="flex shrink-0 gap-1">
         {editing ? (
           <Button size="sm" variant="outline" disabled={pending} onClick={save}>
             Guardar
@@ -170,7 +170,7 @@ function AddEntryForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <Input
           placeholder="Buscar alimento guardado..."
           value={selected ? selected.name : query}
@@ -181,7 +181,7 @@ function AddEntryForm({
           value={mealType}
           onValueChange={(value) => setMealType(value as MealType)}
         >
-          <SelectTrigger className="w-36">
+          <SelectTrigger className="w-full sm:w-36">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

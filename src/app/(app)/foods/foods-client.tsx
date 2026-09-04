@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -23,51 +22,9 @@ import {
   type SearchFoodsResult,
 } from "@/lib/food-sources/actions";
 import type { ManualFoodInput } from "@/lib/food-sources/persist";
+import { FoodResultCard } from "./food-result-card";
 
 const SEARCH_DEBOUNCE_MS = 800;
-
-function NutrientSummary({ result }: { result: ExternalFoodResult }) {
-  return (
-    <p className="text-sm text-muted-foreground">
-      {Math.round(result.calories)} kcal · P {result.protein}g · C {result.carbs}g · G{" "}
-      {result.fat}g (por 100g)
-    </p>
-  );
-}
-
-function SaveButton({
-  savedLabel,
-  onSave,
-}: {
-  savedLabel: string;
-  onSave: () => Promise<unknown>;
-}) {
-  const [pending, startTransition] = useTransition();
-  const [saved, setSaved] = useState(false);
-
-  if (saved) {
-    return (
-      <Button size="sm" disabled variant="outline">
-        {savedLabel}
-      </Button>
-    );
-  }
-
-  return (
-    <Button
-      size="sm"
-      disabled={pending}
-      onClick={() =>
-        startTransition(async () => {
-          await onSave();
-          setSaved(true);
-        })
-      }
-    >
-      {pending ? "Guardando..." : "Guardar"}
-    </Button>
-  );
-}
 
 function BarcodeTab() {
   const [barcode, setBarcode] = useState("");
@@ -111,21 +68,7 @@ function BarcodeTab() {
       )}
 
       {result && (
-        <Card>
-          <CardHeader className="flex flex-row items-start justify-between gap-4">
-            <div>
-              <CardTitle>{result.name}</CardTitle>
-              <NutrientSummary result={result} />
-            </div>
-            <Badge variant="secondary">OFF</Badge>
-          </CardHeader>
-          <CardContent>
-            <SaveButton
-              savedLabel="Guardado"
-              onSave={() => saveOffFoodAction(result)}
-            />
-          </CardContent>
-        </Card>
+        <FoodResultCard result={result} source="OFF" onSave={() => saveOffFoodAction(result)} />
       )}
     </div>
   );
@@ -161,25 +104,14 @@ function SearchResultsColumn({
       ) : (
         <div className="flex flex-col gap-3">
           {state.results.map((result) => (
-            <Card key={result.externalId}>
-              <CardHeader className="flex flex-row items-start justify-between gap-4">
-                <div>
-                  <CardTitle className="text-base">{result.name}</CardTitle>
-                  <NutrientSummary result={result} />
-                </div>
-                <Badge variant="secondary">{source}</Badge>
-              </CardHeader>
-              <CardContent>
-                <SaveButton
-                  savedLabel="Guardado"
-                  onSave={() =>
-                    source === "OFF"
-                      ? saveOffFoodAction(result)
-                      : saveUsdaFoodAction(result)
-                  }
-                />
-              </CardContent>
-            </Card>
+            <FoodResultCard
+              key={result.externalId}
+              result={result}
+              source={source}
+              onSave={() =>
+                source === "OFF" ? saveOffFoodAction(result) : saveUsdaFoodAction(result)
+              }
+            />
           ))}
         </div>
       )}
@@ -346,11 +278,13 @@ export function FoodsClient() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="barcode">
-          <TabsList>
-            <TabsTrigger value="barcode">Código de barras</TabsTrigger>
-            <TabsTrigger value="search">Buscar por nombre</TabsTrigger>
-            <TabsTrigger value="manual">Alta manual</TabsTrigger>
-          </TabsList>
+          <div className="-mx-1 overflow-x-auto px-1">
+            <TabsList>
+              <TabsTrigger value="barcode">Código de barras</TabsTrigger>
+              <TabsTrigger value="search">Buscar por nombre</TabsTrigger>
+              <TabsTrigger value="manual">Alta manual</TabsTrigger>
+            </TabsList>
+          </div>
           <TabsContent value="barcode">
             <BarcodeTab />
           </TabsContent>

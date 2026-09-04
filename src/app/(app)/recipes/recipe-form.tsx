@@ -159,23 +159,25 @@ export function RecipeForm({
         )}
         {ingredients.map((row, index) => (
           <div key={`${row.foodId}-${index}`} className="flex items-center gap-2">
-            <span className="flex-1 text-sm">{row.foodName}</span>
-            <Input
-              className="w-24"
-              type="number"
-              step="any"
-              value={row.grams}
-              onChange={(e) => updateGrams(index, e.target.value)}
-            />
-            <span className="text-xs text-muted-foreground">g</span>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => removeIngredient(index)}
-            >
-              Quitar
-            </Button>
+            <span className="min-w-0 flex-1 truncate text-sm">{row.foodName}</span>
+            <div className="flex shrink-0 items-center gap-2">
+              <Input
+                className="w-20"
+                type="number"
+                step="any"
+                value={row.grams}
+                onChange={(e) => updateGrams(index, e.target.value)}
+              />
+              <span className="text-xs text-muted-foreground">g</span>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => removeIngredient(index)}
+              >
+                Quitar
+              </Button>
+            </div>
           </div>
         ))}
         <IngredientPicker onAdd={addIngredient} />

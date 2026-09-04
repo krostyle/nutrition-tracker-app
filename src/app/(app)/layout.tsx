@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Show } from "@clerk/nextjs";
-import { AppSidebar } from "@/components/app-sidebar";
+import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,10 +14,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Show when="signed-in">
-        <div className="flex flex-1">
-          <AppSidebar />
-          <main className="flex flex-1 flex-col overflow-x-hidden">{children}</main>
-        </div>
+        <AppShell>{children}</AppShell>
       </Show>
       <Show when="signed-out">
         <div className="flex flex-1 flex-col items-center justify-center gap-6 p-8">

@@ -25,6 +25,7 @@ import type { ManualFoodInput } from "@/lib/food-sources/persist";
 import { FoodResultCard } from "./food-result-card";
 
 const SEARCH_DEBOUNCE_MS = 800;
+const MIN_QUERY_LENGTH = 3;
 
 function BarcodeTab() {
   const [barcode, setBarcode] = useState("");
@@ -74,46 +75,44 @@ function BarcodeTab() {
   );
 }
 
-function SearchResultsColumn({
-  title,
-  source,
-  state,
-}: {
-  title: string;
-  source: "OFF" | "USDA";
-  state: SearchFoodsResult["off"] | undefined;
-}) {
-  if (!state) return null;
+const SOURCE_LABELS: Record<"OFF" | "USDA", string> = {
+  OFF: "Open Food Facts",
+  USDA: "USDA FoodData Central",
+};
 
-  if (!state.ok) {
-    return (
-      <div className="flex-1">
-        <h3 className="mb-2 text-sm font-medium">{title}</h3>
-        <p className="text-sm text-muted-foreground">
-          Esta fuente no está disponible en este momento.
-        </p>
-      </div>
-    );
-  }
+function MergedSearchResults({ results }: { results: SearchFoodsResult }) {
+  const unavailable: ("OFF" | "USDA")[] = [];
+  const items: { result: ExternalFoodResult; source: "OFF" | "USDA" }[] = [];
+
+  (["OFF", "USDA"] as const).forEach((source) => {
+    const state = results[source === "OFF" ? "off" : "usda"];
+    if (!state.ok) {
+      unavailable.push(source);
+      return;
+    }
+    items.push(...state.results.map((result) => ({ result, source })));
+  });
 
   return (
-    <div className="flex-1">
-      <h3 className="mb-2 text-sm font-medium">{title}</h3>
-      {state.results.length === 0 ? (
+    <div className="flex flex-col gap-3">
+      {unavailable.map((source) => (
+        <p key={source} className="text-sm text-muted-foreground">
+          {SOURCE_LABELS[source]} no está disponible en este momento.
+        </p>
+      ))}
+      {items.length === 0 ? (
         <p className="text-sm text-muted-foreground">Sin resultados.</p>
       ) : (
-        <div className="flex flex-col gap-3">
-          {state.results.map((result) => (
-            <FoodResultCard
-              key={result.externalId}
-              result={result}
-              source={source}
-              onSave={() =>
-                source === "OFF" ? saveOffFoodAction(result) : saveUsdaFoodAction(result)
-              }
-            />
-          ))}
-        </div>
+        items.map(({ result, source }) => (
+          <FoodResultCard
+            key={`${source}-${result.externalId}`}
+            result={result}
+            source={source}
+            onSave={() =>
+              source === "OFF" ? saveOffFoodAction(result) : saveUsdaFoodAction(result)
+            }
+          />
+        ))
       )}
     </div>
   );
@@ -126,7 +125,7 @@ function SearchTab() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function runSearch(term: string) {
-    if (!term.trim()) return;
+    if (term.trim().length < MIN_QUERY_LENGTH) return;
     startTransition(async () => {
       const searchResults = await searchFoodsAction(term.trim());
       setResults(searchResults);
@@ -136,6 +135,10 @@ function SearchTab() {
   function handleChange(value: string) {
     setQuery(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (value.trim().length < MIN_QUERY_LENGTH) {
+      setResults(null);
+      return;
+    }
     debounceRef.current = setTimeout(() => runSearch(value), SEARCH_DEBOUNCE_MS);
   }
 
@@ -151,6 +154,8 @@ function SearchTab() {
     };
   }, []);
 
+  const tooShort = query.trim().length > 0 && query.trim().length < MIN_QUERY_LENGTH;
+
   return (
     <div className="flex flex-col gap-4">
       <form onSubmit={handleSubmit} className="flex gap-2">
@@ -164,12 +169,11 @@ function SearchTab() {
         </Button>
       </form>
 
-      {results && (
-        <div className="flex flex-col gap-6 sm:flex-row">
-          <SearchResultsColumn title="Open Food Facts" source="OFF" state={results.off} />
-          <SearchResultsColumn title="USDA FoodData Central" source="USDA" state={results.usda} />
-        </div>
+      {tooShort && (
+        <p className="text-sm text-muted-foreground">Escribí al menos 3 caracteres.</p>
       )}
+
+      {!tooShort && results && <MergedSearchResults results={results} />}
     </div>
   );
 }

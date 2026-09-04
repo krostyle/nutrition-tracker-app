@@ -31,10 +31,17 @@ export default function Home() {
             </Button>
           </Show>
           <Show when="signed-in">
-            <p className="text-sm text-muted-foreground">
-              Sesión iniciada. Las features se agregan siguiendo el flujo
-              spec-driven descrito en CLAUDE.md.
-            </p>
+            <div className="flex flex-col gap-2">
+              <Button render={<Link href="/log" />} className="w-full">
+                Registro del día
+              </Button>
+              <Button render={<Link href="/foods" />} variant="outline" className="w-full">
+                Buscar alimentos
+              </Button>
+              <Button render={<Link href="/goals" />} variant="outline" className="w-full">
+                Metas
+              </Button>
+            </div>
           </Show>
         </CardContent>
       </Card>

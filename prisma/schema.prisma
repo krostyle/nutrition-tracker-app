@@ -19,6 +19,13 @@ enum FoodSource {
   MANUAL
 }
 
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
 model Food {
   id         String     @id @default(cuid())
   name       String
@@ -37,5 +44,30 @@ model Food {
   saturatedFat Float?
   sodium       Float?
 
+  logEntries FoodLogEntry[]
+
   @@unique([source, externalId])
+}
+
+// Metas vigentes, single-user: una única fila con id fijo "singleton".
+model Goal {
+  id        String   @id
+  calories  Float
+  protein   Float
+  carbs     Float
+  fat       Float
+  updatedAt DateTime @updatedAt
+}
+
+model FoodLogEntry {
+  id        String   @id @default(cuid())
+  foodId    String
+  food      Food     @relation(fields: [foodId], references: [id])
+  grams     Float
+  mealType  MealType
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
 }

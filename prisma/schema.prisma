@@ -44,7 +44,8 @@ model Food {
   saturatedFat Float?
   sodium       Float?
 
-  logEntries FoodLogEntry[]
+  logEntries        FoodLogEntry[]
+  recipeIngredients RecipeIngredient[]
 
   @@unique([source, externalId])
 }
@@ -70,4 +71,23 @@ model FoodLogEntry {
   updatedAt DateTime @updatedAt
 
   @@index([date])
+}
+
+model Recipe {
+  id        String   @id @default(cuid())
+  name      String
+  servings  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ingredients RecipeIngredient[]
+}
+
+model RecipeIngredient {
+  id       String @id @default(cuid())
+  recipeId String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  foodId   String
+  food     Food   @relation(fields: [foodId], references: [id])
+  grams    Float
 }

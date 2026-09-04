@@ -41,6 +41,9 @@ export default function Home() {
               <Button render={<Link href="/goals" />} variant="outline" className="w-full">
                 Metas
               </Button>
+              <Button render={<Link href="/recipes" />} variant="outline" className="w-full">
+                Recetas
+              </Button>
             </div>
           </Show>
         </CardContent>

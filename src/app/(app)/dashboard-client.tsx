@@ -219,7 +219,7 @@ function AddEntryForm({
   );
 }
 
-export function LogClient() {
+export function DashboardClient() {
   const [dateKey, setDateKey] = useState(todayDateKey());
   const [summary, setSummary] = useState<DaySummary | null>(null);
   const [pending, startTransition] = useTransition();

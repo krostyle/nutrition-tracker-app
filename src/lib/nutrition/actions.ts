@@ -4,39 +4,63 @@ import type { Food, Goal, MealType } from "@/generated/prisma/client";
 import type { ExternalFoodResult } from "@/lib/food-sources/actions";
 import { createManualFood, persistExternalFood, type ManualFoodInput } from "@/lib/food-sources/persist";
 import { searchLocalFoods } from "@/lib/food-sources/search-local";
-import { aggregateNutrients, type AggregatedNutrients } from "./aggregate";
+import { aggregateNutrients, type AggregatedNutrients, type WeightedNutrients } from "./aggregate";
 import { parseDateKey } from "./date";
 import { getGoal, saveGoal, type GoalInput } from "./goal";
 import {
   createLogEntry,
   deleteLogEntry,
   listLogEntriesForDate,
-  updateLogEntryGrams,
-  type FoodLogEntryWithFood,
+  updateLogEntryQuantity,
+  type FoodLogEntryWithDetails,
 } from "./log-entries";
+import { calculateRecipeNutrients } from "./recipe";
 
 const MEAL_TYPES: MealType[] = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"];
+
+export type LogEntryDisplay = FoodLogEntryWithDetails & { calories: number };
 
 export type DaySummary = {
   goal: Goal | null;
   totals: AggregatedNutrients;
-  entriesByMeal: Record<MealType, FoodLogEntryWithFood[]>;
+  entriesByMeal: Record<MealType, LogEntryDisplay[]>;
 };
+
+function entryContribution(entry: FoodLogEntryWithDetails): WeightedNutrients {
+  if (entry.food) {
+    return { nutrients: entry.food, factor: entry.quantity / 100 };
+  }
+
+  const recipe = entry.recipe!;
+  const { perServing } = calculateRecipeNutrients({
+    servings: recipe.servings,
+    ingredients: recipe.ingredients.map((ingredient) => ({
+      nutrients: ingredient.food,
+      grams: ingredient.grams,
+    })),
+  });
+  return { nutrients: perServing, factor: entry.quantity };
+}
 
 export async function getDaySummaryAction(dateKey: string): Promise<DaySummary> {
   const date = parseDateKey(dateKey);
   const [entries, goal] = await Promise.all([listLogEntriesForDate(date), getGoal()]);
 
-  const totals = aggregateNutrients(
-    entries.map((entry) => ({ nutrients: entry.food, grams: entry.grams })),
-  );
+  const contributions = entries.map((entry) => ({ entry, contribution: entryContribution(entry) }));
+
+  const totals = aggregateNutrients(contributions.map((c) => c.contribution));
+
+  const displayEntries: LogEntryDisplay[] = contributions.map(({ entry, contribution }) => ({
+    ...entry,
+    calories: contribution.nutrients.calories * contribution.factor,
+  }));
 
   const entriesByMeal = Object.fromEntries(
     MEAL_TYPES.map((mealType) => [
       mealType,
-      entries.filter((entry) => entry.mealType === mealType),
+      displayEntries.filter((entry) => entry.mealType === mealType),
     ]),
-  ) as Record<MealType, FoodLogEntryWithFood[]>;
+  ) as Record<MealType, LogEntryDisplay[]>;
 
   return { goal, totals, entriesByMeal };
 }
@@ -50,28 +74,30 @@ export async function saveGoalAction(input: GoalInput): Promise<Goal> {
 }
 
 export type CreateEntryActionInput = {
-  foodId: string;
-  grams: number;
+  foodId?: string;
+  recipeId?: string;
+  quantity: number;
   mealType: MealType;
   dateKey: string;
 };
 
 export async function createLogEntryAction(
   input: CreateEntryActionInput,
-): Promise<FoodLogEntryWithFood> {
+): Promise<FoodLogEntryWithDetails> {
   return createLogEntry({
     foodId: input.foodId,
-    grams: input.grams,
+    recipeId: input.recipeId,
+    quantity: input.quantity,
     mealType: input.mealType,
     date: parseDateKey(input.dateKey),
   });
 }
 
-export async function updateLogEntryGramsAction(
+export async function updateLogEntryQuantityAction(
   id: string,
-  grams: number,
-): Promise<FoodLogEntryWithFood> {
-  return updateLogEntryGrams(id, grams);
+  quantity: number,
+): Promise<FoodLogEntryWithDetails> {
+  return updateLogEntryQuantity(id, quantity);
 }
 
 export async function deleteLogEntryAction(id: string): Promise<void> {
@@ -85,14 +111,24 @@ export async function searchLocalFoodsAction(query: string): Promise<Food[]> {
 export type AddFoodToMealInput =
   | { kind: "existing"; foodId: string }
   | { kind: "OFF" | "USDA"; result: ExternalFoodResult }
-  | { kind: "manual"; input: ManualFoodInput };
+  | { kind: "manual"; input: ManualFoodInput }
+  | { kind: "recipe"; recipeId: string };
 
 export async function addFoodToMealAction(
   food: AddFoodToMealInput,
-  grams: number,
+  quantity: number,
   mealType: MealType,
   dateKey: string,
-): Promise<FoodLogEntryWithFood> {
+): Promise<FoodLogEntryWithDetails> {
+  if (food.kind === "recipe") {
+    return createLogEntry({
+      recipeId: food.recipeId,
+      quantity,
+      mealType,
+      date: parseDateKey(dateKey),
+    });
+  }
+
   let foodId: string;
 
   if (food.kind === "existing") {
@@ -106,7 +142,7 @@ export async function addFoodToMealAction(
 
   return createLogEntry({
     foodId,
-    grams,
+    quantity,
     mealType,
     date: parseDateKey(dateKey),
   });

@@ -16,11 +16,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   deleteLogEntryAction,
   getDaySummaryAction,
-  updateLogEntryGramsAction,
+  updateLogEntryQuantityAction,
   type DaySummary,
+  type LogEntryDisplay,
 } from "@/lib/nutrition/actions";
 import { shiftDateKey, todayDateKey } from "@/lib/nutrition/date";
-import type { Food, FoodLogEntry, MealType } from "@/generated/prisma/client";
+import type { MealType } from "@/generated/prisma/client";
 import { MealFoodPicker } from "./meal-food-picker";
 
 const MEAL_TYPES: MealType[] = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"];
@@ -47,20 +48,24 @@ function EntryRow({
   entry,
   onChanged,
 }: {
-  entry: FoodLogEntry & { food: Food };
+  entry: LogEntryDisplay;
   onChanged: () => void;
 }) {
+  const isRecipe = Boolean(entry.recipe);
+  const name = entry.food?.name ?? entry.recipe?.name ?? "";
+  const unit = isRecipe ? "porciones" : "g";
+
   const [editing, setEditing] = useState(false);
-  const [grams, setGrams] = useState(String(entry.grams));
+  const [quantity, setQuantity] = useState(String(entry.quantity));
   const [pending, startTransition] = useTransition();
 
-  const calories = round((entry.food.calories * entry.grams) / 100);
+  const calories = round(entry.calories);
 
   function save() {
-    const value = Number(grams);
+    const value = Number(quantity);
     if (!value || value <= 0) return;
     startTransition(async () => {
-      await updateLogEntryGramsAction(entry.id, value);
+      await updateLogEntryQuantityAction(entry.id, value);
       setEditing(false);
       onChanged();
     });
@@ -76,7 +81,7 @@ function EntryRow({
   return (
     <div className="flex items-center justify-between gap-2 border-b py-2 text-sm last:border-b-0">
       <div className="min-w-0 flex-1">
-        <p className="truncate">{entry.food.name}</p>
+        <p className="truncate">{name}</p>
         <p className="text-muted-foreground">
           {editing ? (
             <span className="inline-flex items-center gap-1">
@@ -84,13 +89,13 @@ function EntryRow({
                 className="h-6 w-20"
                 type="number"
                 step="any"
-                value={grams}
-                onChange={(e) => setGrams(e.target.value)}
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
               />
-              g
+              {unit}
             </span>
           ) : (
-            `${entry.grams}g · ${calories} kcal`
+            `${entry.quantity} ${unit} · ${calories} kcal`
           )}
         </p>
       </div>

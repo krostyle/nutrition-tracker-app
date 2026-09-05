@@ -20,7 +20,8 @@ import {
 } from "@/lib/food-sources/actions";
 import type { ManualFoodInput } from "@/lib/food-sources/persist";
 import { addFoodToMealAction, searchLocalFoodsAction } from "@/lib/nutrition/actions";
-import type { Food, MealType } from "@/generated/prisma/client";
+import { getRecipeDetailAction, listRecipesAction } from "@/lib/nutrition/recipe-actions";
+import type { Food, MealType, Recipe } from "@/generated/prisma/client";
 import { MacroRow, NutritionFacts, scaleToServing, type NutrientValues } from "./foods/nutrition-facts";
 
 const MIN_QUERY_LENGTH = 3;
@@ -29,21 +30,28 @@ const LOCAL_DEBOUNCE_MS = 400;
 
 type Candidate =
   | { kind: "existing"; foodId: string; food: Food }
-  | { kind: "OFF" | "USDA"; result: ExternalFoodResult };
+  | { kind: "OFF" | "USDA"; result: ExternalFoodResult }
+  | { kind: "recipe"; recipeId: string; name: string; perServing: NutrientValues };
 
 function candidateName(candidate: Candidate): string {
-  return candidate.kind === "existing" ? candidate.food.name : candidate.result.name;
+  if (candidate.kind === "existing") return candidate.food.name;
+  if (candidate.kind === "recipe") return candidate.name;
+  return candidate.result.name;
 }
 
 function candidateValues(candidate: Candidate): NutrientValues {
-  return candidate.kind === "existing" ? candidate.food : candidate.result;
+  if (candidate.kind === "existing") return candidate.food;
+  if (candidate.kind === "recipe") return candidate.perServing;
+  return candidate.result;
 }
 
 function candidateBrand(candidate: Candidate): string | undefined {
+  if (candidate.kind === "recipe") return undefined;
   return (candidate.kind === "existing" ? candidate.food.brand : candidate.result.brand) ?? undefined;
 }
 
 function candidateServingSize(candidate: Candidate): number | undefined {
+  if (candidate.kind === "recipe") return undefined;
   return (
     (candidate.kind === "existing" ? candidate.food.servingSize : candidate.result.servingSize) ??
     undefined
@@ -51,6 +59,7 @@ function candidateServingSize(candidate: Candidate): number | undefined {
 }
 
 function candidateServingLabel(candidate: Candidate): string | undefined {
+  if (candidate.kind === "recipe") return undefined;
   return (
     (candidate.kind === "existing" ? candidate.food.servingLabel : candidate.result.servingLabel) ??
     undefined
@@ -86,16 +95,18 @@ function ResultRow({
   );
 }
 
-function ConfirmGramsFooter({
+function ConfirmQuantityFooter({
   candidate,
   pending,
   onConfirm,
 }: {
   candidate: Candidate;
   pending: boolean;
-  onConfirm: (grams: number) => void;
+  onConfirm: (quantity: number) => void;
 }) {
-  const [grams, setGrams] = useState("100");
+  const isRecipe = candidate.kind === "recipe";
+  const unit = isRecipe ? "porciones" : "g";
+  const [quantity, setQuantity] = useState(isRecipe ? "1" : "100");
   const values = candidateValues(candidate);
   const brand = candidateBrand(candidate);
   const servingSize = candidateServingSize(candidate);
@@ -109,7 +120,9 @@ function ConfirmGramsFooter({
       </div>
 
       <div>
-        <h4 className="mb-1 text-xs font-medium text-muted-foreground">Por 100g</h4>
+        <h4 className="mb-1 text-xs font-medium text-muted-foreground">
+          {isRecipe ? "Por porción" : "Por 100g"}
+        </h4>
         <NutritionFacts values={values} />
       </div>
 
@@ -127,14 +140,14 @@ function ConfirmGramsFooter({
           className="w-20"
           type="number"
           step="any"
-          value={grams}
-          onChange={(e) => setGrams(e.target.value)}
+          value={quantity}
+          onChange={(e) => setQuantity(e.target.value)}
         />
-        <span className="text-xs text-muted-foreground">g</span>
+        <span className="text-xs text-muted-foreground">{unit}</span>
         <Button
           size="sm"
-          disabled={pending || !Number(grams)}
-          onClick={() => onConfirm(Number(grams))}
+          disabled={pending || !Number(quantity)}
+          onClick={() => onConfirm(Number(quantity))}
         >
           {pending ? "Agregando..." : "Agregar"}
         </Button>
@@ -326,6 +339,53 @@ function BarcodePickerTab({ onSelect }: { onSelect: (c: Candidate) => void }) {
   );
 }
 
+function RecipesPickerTab({ onSelect }: { onSelect: (c: Candidate) => void }) {
+  const [recipes, setRecipes] = useState<Recipe[] | null>(null);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    listRecipesAction().then(setRecipes);
+  }, []);
+
+  async function handlePick(recipe: Recipe) {
+    setLoadingId(recipe.id);
+    const detail = await getRecipeDetailAction(recipe.id);
+    setLoadingId(null);
+    if (!detail) return;
+    onSelect({
+      kind: "recipe",
+      recipeId: recipe.id,
+      name: recipe.name,
+      perServing: detail.calculation.perServing,
+    });
+  }
+
+  return (
+    <div className="flex max-h-60 flex-col overflow-y-auto rounded-lg border">
+      {recipes === null ? (
+        <p className="p-2 text-sm text-muted-foreground">Cargando...</p>
+      ) : recipes.length === 0 ? (
+        <p className="p-2 text-sm text-muted-foreground">Todavía no creaste recetas.</p>
+      ) : (
+        recipes.map((recipe) => (
+          <button
+            type="button"
+            key={recipe.id}
+            disabled={loadingId !== null}
+            onClick={() => handlePick(recipe)}
+            className="flex items-center justify-between gap-2 border-b px-2 py-2 text-left text-sm last:border-b-0 hover:bg-muted disabled:opacity-50"
+          >
+            <span className="min-w-0 flex-1 truncate font-medium">{recipe.name}</span>
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {loadingId === recipe.id ? "Cargando..." : `${recipe.servings} porciones`}
+            </span>
+          </button>
+        ))
+      )}
+    </div>
+  );
+}
+
 const MANUAL_FIELDS = ["calories", "protein", "carbs", "fat"] as const;
 const MANUAL_LABELS: Record<(typeof MANUAL_FIELDS)[number], string> = {
   calories: "Calorías (kcal)",
@@ -427,14 +487,16 @@ export function MealFoodPicker({
     onOpenChange(next);
   }
 
-  function confirmCandidate(grams: number) {
+  function confirmCandidate(quantity: number) {
     if (!candidate) return;
     startTransition(async () => {
       const input =
         candidate.kind === "existing"
           ? ({ kind: "existing", foodId: candidate.foodId } as const)
-          : ({ kind: candidate.kind, result: candidate.result } as const);
-      await addFoodToMealAction(input, grams, mealType, dateKey);
+          : candidate.kind === "recipe"
+            ? ({ kind: "recipe", recipeId: candidate.recipeId } as const)
+            : ({ kind: candidate.kind, result: candidate.result } as const);
+      await addFoodToMealAction(input, quantity, mealType, dateKey);
       reset();
       onAdded();
       onOpenChange(false);
@@ -459,7 +521,7 @@ export function MealFoodPicker({
 
         {candidate ? (
           <div className="flex flex-col gap-2">
-            <ConfirmGramsFooter candidate={candidate} pending={pending} onConfirm={confirmCandidate} />
+            <ConfirmQuantityFooter candidate={candidate} pending={pending} onConfirm={confirmCandidate} />
             <Button variant="outline" size="sm" onClick={reset}>
               Elegir otro
             </Button>
@@ -471,6 +533,7 @@ export function MealFoodPicker({
                 <TabsTrigger value="saved">Guardados</TabsTrigger>
                 <TabsTrigger value="search">Por nombre</TabsTrigger>
                 <TabsTrigger value="barcode">Código de barras</TabsTrigger>
+                <TabsTrigger value="recipes">Recetas</TabsTrigger>
                 <TabsTrigger value="manual">Manual</TabsTrigger>
               </TabsList>
             </div>
@@ -482,6 +545,9 @@ export function MealFoodPicker({
             </TabsContent>
             <TabsContent value="barcode">
               <BarcodePickerTab onSelect={setCandidate} />
+            </TabsContent>
+            <TabsContent value="recipes">
+              <RecipesPickerTab onSelect={setCandidate} />
             </TabsContent>
             <TabsContent value="manual">
               <ManualPickerTab pending={pending} onSubmit={confirmManual} />

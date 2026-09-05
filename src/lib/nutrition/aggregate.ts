@@ -11,7 +11,10 @@ export type NutrientsPer100g = {
 
 export type WeightedNutrients = {
   nutrients: NutrientsPer100g;
-  grams: number;
+  // Multiplicador aplicado directamente a cada nutriente: gramos/100 para un
+  // alimento, cantidad de porciones para una receta, etc. — lo calcula quien
+  // llama, según qué represente "una unidad" de nutrients.
+  factor: number;
 };
 
 export type AggregatedNutrients = {
@@ -37,8 +40,7 @@ export function aggregateNutrients(items: WeightedNutrients[]): AggregatedNutrie
     sodium: 0,
   };
 
-  for (const { nutrients, grams } of items) {
-    const factor = grams / 100;
+  for (const { nutrients, factor } of items) {
     totals.calories += nutrients.calories * factor;
     totals.protein += nutrients.protein * factor;
     totals.carbs += nutrients.carbs * factor;

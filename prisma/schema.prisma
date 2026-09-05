@@ -66,14 +66,17 @@ model Goal {
 }
 
 model FoodLogEntry {
-  id        String   @id @default(cuid())
-  foodId    String
-  food      Food     @relation(fields: [foodId], references: [id])
-  grams     Float
+  id        String    @id @default(cuid())
+  foodId    String?
+  food      Food?     @relation(fields: [foodId], references: [id])
+  recipeId  String?
+  recipe    Recipe?   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  // Gramos si es un alimento (foodId), porciones si es una receta (recipeId).
+  quantity  Float
   mealType  MealType
-  date      DateTime @db.Date
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  date      DateTime  @db.Date
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@index([date])
 }
@@ -86,6 +89,7 @@ model Recipe {
   updatedAt DateTime @updatedAt
 
   ingredients RecipeIngredient[]
+  logEntries  FoodLogEntry[]
 }
 
 model RecipeIngredient {

@@ -21,31 +21,32 @@ import {
 import type { ManualFoodInput } from "@/lib/food-sources/persist";
 import { addFoodToMealAction, searchLocalFoodsAction } from "@/lib/nutrition/actions";
 import type { Food, MealType } from "@/generated/prisma/client";
+import { MacroRow, type NutrientValues } from "./foods/nutrition-facts";
 
 const MIN_QUERY_LENGTH = 3;
 const SEARCH_DEBOUNCE_MS = 800;
 const LOCAL_DEBOUNCE_MS = 400;
 
 type Candidate =
-  | { kind: "existing"; foodId: string; name: string; calories: number }
+  | { kind: "existing"; foodId: string; food: Food }
   | { kind: "OFF" | "USDA"; result: ExternalFoodResult };
 
 function candidateName(candidate: Candidate): string {
-  return candidate.kind === "existing" ? candidate.name : candidate.result.name;
+  return candidate.kind === "existing" ? candidate.food.name : candidate.result.name;
 }
 
-function candidateCalories(candidate: Candidate): number {
-  return candidate.kind === "existing" ? candidate.calories : candidate.result.calories;
+function candidateValues(candidate: Candidate): NutrientValues {
+  return candidate.kind === "existing" ? candidate.food : candidate.result;
 }
 
 function ResultRow({
   name,
-  calories,
+  values,
   badge,
   onSelect,
 }: {
   name: string;
-  calories: number;
+  values: NutrientValues;
   badge?: string;
   onSelect: () => void;
 }) {
@@ -53,12 +54,13 @@ function ResultRow({
     <button
       type="button"
       onClick={onSelect}
-      className="flex items-center justify-between gap-2 border-b px-2 py-2 text-left text-sm last:border-b-0 hover:bg-muted"
+      className="flex flex-col gap-1 border-b px-2 py-2 text-left text-sm last:border-b-0 hover:bg-muted"
     >
-      <span className="min-w-0 flex-1 truncate">{name}</span>
-      <span className="shrink-0 text-xs text-muted-foreground">
-        {Math.round(calories)} kcal{badge ? ` · ${badge}` : ""}
-      </span>
+      <div className="flex items-center justify-between gap-2">
+        <span className="min-w-0 flex-1 truncate font-medium">{name}</span>
+        {badge && <span className="shrink-0 text-xs text-muted-foreground">{badge}</span>}
+      </div>
+      <MacroRow values={values} />
     </button>
   );
 }
@@ -75,28 +77,28 @@ function ConfirmGramsFooter({
   const [grams, setGrams] = useState("100");
 
   return (
-    <div className="flex items-center gap-2 rounded-lg border p-2">
-      <div className="min-w-0 flex-1">
+    <div className="flex flex-col gap-2 rounded-lg border p-2">
+      <div className="min-w-0">
         <p className="truncate text-sm font-medium">{candidateName(candidate)}</p>
-        <p className="text-xs text-muted-foreground">
-          {Math.round(candidateCalories(candidate))} kcal / 100g
-        </p>
+        <MacroRow values={candidateValues(candidate)} />
       </div>
-      <Input
-        className="w-20"
-        type="number"
-        step="any"
-        value={grams}
-        onChange={(e) => setGrams(e.target.value)}
-      />
-      <span className="text-xs text-muted-foreground">g</span>
-      <Button
-        size="sm"
-        disabled={pending || !Number(grams)}
-        onClick={() => onConfirm(Number(grams))}
-      >
-        {pending ? "Agregando..." : "Agregar"}
-      </Button>
+      <div className="flex items-center gap-2">
+        <Input
+          className="w-20"
+          type="number"
+          step="any"
+          value={grams}
+          onChange={(e) => setGrams(e.target.value)}
+        />
+        <span className="text-xs text-muted-foreground">g</span>
+        <Button
+          size="sm"
+          disabled={pending || !Number(grams)}
+          onClick={() => onConfirm(Number(grams))}
+        >
+          {pending ? "Agregando..." : "Agregar"}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -137,15 +139,8 @@ function SavedFoodsPickerTab({ onSelect }: { onSelect: (c: Candidate) => void })
             <ResultRow
               key={food.id}
               name={food.name}
-              calories={food.calories}
-              onSelect={() =>
-                onSelect({
-                  kind: "existing",
-                  foodId: food.id,
-                  name: food.name,
-                  calories: food.calories,
-                })
-              }
+              values={food}
+              onSelect={() => onSelect({ kind: "existing", foodId: food.id, food })}
             />
           ))
         )}
@@ -224,7 +219,7 @@ function SearchByNamePickerTab({ onSelect }: { onSelect: (c: Candidate) => void 
               <ResultRow
                 key={`${source}-${result.externalId}`}
                 name={result.name}
-                calories={result.calories}
+                values={result}
                 badge={source}
                 onSelect={() => onSelect({ kind: source, result })}
               />
@@ -278,7 +273,7 @@ function BarcodePickerTab({ onSelect }: { onSelect: (c: Candidate) => void }) {
         <div className="rounded-lg border">
           <ResultRow
             name={result.name}
-            calories={result.calories}
+            values={result}
             badge="OFF"
             onSelect={() => onSelect({ kind: "OFF", result })}
           />

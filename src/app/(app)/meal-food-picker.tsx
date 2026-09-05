@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { Barcode, Bookmark, ChefHat, Search, SquarePen } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +14,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  TabIconBadge,
+  floatingTabLabelClass,
+  floatingTabListClass,
+  floatingTabTriggerClass,
+} from "@/components/ui/floating-tab-bar";
 import {
   listFoodsAction,
   lookupBarcodeAction,
@@ -528,23 +536,16 @@ export function MealFoodPicker({
           </div>
         ) : (
           <Tabs defaultValue="saved">
-            <TabsList className="w-full">
-              <TabsTrigger value="saved" className="px-1 text-xs sm:px-1.5 sm:text-sm">
-                Guardados
-              </TabsTrigger>
-              <TabsTrigger value="search" className="px-1 text-xs sm:px-1.5 sm:text-sm">
-                Buscar
-              </TabsTrigger>
-              <TabsTrigger value="barcode" className="px-1 text-xs sm:px-1.5 sm:text-sm">
-                Escanear
-              </TabsTrigger>
-              <TabsTrigger value="recipes" className="px-1 text-xs sm:px-1.5 sm:text-sm">
-                Recetas
-              </TabsTrigger>
-              <TabsTrigger value="manual" className="px-1 text-xs sm:px-1.5 sm:text-sm">
-                Manual
-              </TabsTrigger>
-            </TabsList>
+            <div className="hidden sm:block">
+              <TabsList className="w-full">
+                <TabsTrigger value="saved">Guardados</TabsTrigger>
+                <TabsTrigger value="search">Buscar</TabsTrigger>
+                <TabsTrigger value="barcode">Escanear</TabsTrigger>
+                <TabsTrigger value="recipes">Recetas</TabsTrigger>
+                <TabsTrigger value="manual">Manual</TabsTrigger>
+              </TabsList>
+            </div>
+
             <TabsContent value="saved">
               <SavedFoodsPickerTab onSelect={setCandidate} />
             </TabsContent>
@@ -560,6 +561,31 @@ export function MealFoodPicker({
             <TabsContent value="manual">
               <ManualPickerTab pending={pending} onSubmit={confirmManual} />
             </TabsContent>
+
+            <div className="sm:hidden">
+              <TabsList className={cn(floatingTabListClass, "w-full")}>
+                <TabsTrigger value="saved" className={floatingTabTriggerClass}>
+                  <TabIconBadge tint="amber" icon={Bookmark} className="size-6" />
+                  <span className={floatingTabLabelClass}>Guardados</span>
+                </TabsTrigger>
+                <TabsTrigger value="search" className={floatingTabTriggerClass}>
+                  <TabIconBadge tint="blue" icon={Search} className="size-6" />
+                  <span className={floatingTabLabelClass}>Buscar</span>
+                </TabsTrigger>
+                <TabsTrigger value="barcode" className={floatingTabTriggerClass}>
+                  <TabIconBadge tint="emerald" icon={Barcode} className="size-6" />
+                  <span className={floatingTabLabelClass}>Escanear</span>
+                </TabsTrigger>
+                <TabsTrigger value="recipes" className={floatingTabTriggerClass}>
+                  <TabIconBadge tint="rose" icon={ChefHat} className="size-6" />
+                  <span className={floatingTabLabelClass}>Recetas</span>
+                </TabsTrigger>
+                <TabsTrigger value="manual" className={floatingTabTriggerClass}>
+                  <TabIconBadge tint="violet" icon={SquarePen} className="size-6" />
+                  <span className={floatingTabLabelClass}>Manual</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
           </Tabs>
         )}
       </DialogContent>

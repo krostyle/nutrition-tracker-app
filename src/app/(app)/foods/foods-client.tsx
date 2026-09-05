@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { Barcode, Bookmark, Search, SquarePen } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +15,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  TabIconBadge,
+  floatingTabLabelClass,
+  floatingTabListClass,
+  floatingTabTriggerClass,
+} from "@/components/ui/floating-tab-bar";
 import {
   createManualFoodAction,
   listFoodsAction,
@@ -412,24 +420,41 @@ export function FoodsClient() {
           </div>
 
           <div className="fixed inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 flex justify-center px-4 sm:hidden">
-            <TabsList className="border border-border/50 bg-popover shadow-lg ring-1 ring-foreground/10">
-              <TabsTrigger value="barcode">Escanear</TabsTrigger>
-              <TabsTrigger value="search">Buscar</TabsTrigger>
-              <TabsTrigger value="manual">Manual</TabsTrigger>
-              <TabsTrigger value="mine">Guardados</TabsTrigger>
+            <TabsList
+              className={cn(
+                floatingTabListClass,
+                "border border-border/50 bg-popover shadow-lg ring-1 ring-foreground/10",
+              )}
+            >
+              <TabsTrigger value="barcode" className={floatingTabTriggerClass}>
+                <TabIconBadge tint="emerald" icon={Barcode} />
+                <span className={floatingTabLabelClass}>Escanear</span>
+              </TabsTrigger>
+              <TabsTrigger value="search" className={floatingTabTriggerClass}>
+                <TabIconBadge tint="blue" icon={Search} />
+                <span className={floatingTabLabelClass}>Buscar</span>
+              </TabsTrigger>
+              <TabsTrigger value="manual" className={floatingTabTriggerClass}>
+                <TabIconBadge tint="violet" icon={SquarePen} />
+                <span className={floatingTabLabelClass}>Manual</span>
+              </TabsTrigger>
+              <TabsTrigger value="mine" className={floatingTabTriggerClass}>
+                <TabIconBadge tint="amber" icon={Bookmark} />
+                <span className={floatingTabLabelClass}>Guardados</span>
+              </TabsTrigger>
             </TabsList>
           </div>
 
-          <TabsContent value="barcode" className="pb-20 sm:pb-0">
+          <TabsContent value="barcode" className="pb-28 sm:pb-0">
             <BarcodeTab />
           </TabsContent>
-          <TabsContent value="search" className="pb-20 sm:pb-0">
+          <TabsContent value="search" className="pb-28 sm:pb-0">
             <SearchTab />
           </TabsContent>
-          <TabsContent value="manual" className="pb-20 sm:pb-0">
+          <TabsContent value="manual" className="pb-28 sm:pb-0">
             <ManualTab />
           </TabsContent>
-          <TabsContent value="mine" className="pb-20 sm:pb-0">
+          <TabsContent value="mine" className="pb-28 sm:pb-0">
             <MyFoodsTab />
           </TabsContent>
         </Tabs>

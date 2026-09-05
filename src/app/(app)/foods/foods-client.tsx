@@ -15,6 +15,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   createManualFoodAction,
+  listFoodsAction,
   lookupBarcodeAction,
   saveOffFoodAction,
   saveUsdaFoodAction,
@@ -23,7 +24,10 @@ import {
   type SearchFoodsResult,
 } from "@/lib/food-sources/actions";
 import type { ManualFoodInput } from "@/lib/food-sources/persist";
+import { searchLocalFoodsAction } from "@/lib/nutrition/actions";
+import type { Food } from "@/generated/prisma/client";
 import { FoodResultCard } from "./food-result-card";
+import { SavedFoodCard } from "./saved-food-card";
 
 const SEARCH_DEBOUNCE_MS = 800;
 const MIN_QUERY_LENGTH = 3;
@@ -206,6 +210,60 @@ function SearchTab() {
   );
 }
 
+const MY_FOODS_DEBOUNCE_MS = 400;
+
+function MyFoodsTab() {
+  const [query, setQuery] = useState("");
+  const [foods, setFoods] = useState<Food[] | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function load(term: string) {
+    const trimmed = term.trim();
+    const promise =
+      trimmed.length >= MIN_QUERY_LENGTH ? searchLocalFoodsAction(trimmed) : listFoodsAction();
+    promise.then(setFoods);
+  }
+
+  useEffect(() => {
+    load("");
+  }, []);
+
+  function handleChange(value: string) {
+    setQuery(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => load(value), MY_FOODS_DEBOUNCE_MS);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Input
+        placeholder="Buscar en mis alimentos guardados..."
+        value={query}
+        onChange={(e) => handleChange(e.target.value)}
+      />
+      {foods === null ? (
+        <SearchResultsSkeleton />
+      ) : foods.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          {query.trim() ? "Sin resultados." : "Todavía no guardaste ningún alimento."}
+        </p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {foods.map((food) => (
+            <SavedFoodCard key={food.id} food={food} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const MANUAL_REQUIRED_FIELDS = ["calories", "protein", "carbs", "fat"] as const;
 const MANUAL_OPTIONAL_FIELDS = ["fiber", "sugar", "saturatedFat", "sodium"] as const;
 
@@ -249,6 +307,10 @@ function ManualTab() {
         ? { saturatedFat: Number(values.saturatedFat) }
         : {}),
       ...(values.sodium?.trim() ? { sodium: Number(values.sodium) } : {}),
+      ...(values.servingSize?.trim()
+        ? { servingSize: Number(values.servingSize) }
+        : {}),
+      ...(values.servingLabel?.trim() ? { servingLabel: values.servingLabel.trim() } : {}),
     };
 
     startTransition(async () => {
@@ -292,6 +354,36 @@ function ManualTab() {
         </div>
       ))}
 
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="manual-servingSize">
+          Porción recomendada en gramos{" "}
+          <span className="text-muted-foreground">(opcional)</span>
+        </Label>
+        <Input
+          id="manual-servingSize"
+          type="number"
+          step="any"
+          value={values.servingSize ?? ""}
+          onChange={(e) =>
+            setValues((prev) => ({ ...prev, servingSize: e.target.value }))
+          }
+        />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="manual-servingLabel">
+          Descripción de la porción{" "}
+          <span className="text-muted-foreground">(opcional, ej. &quot;1 taza&quot;)</span>
+        </Label>
+        <Input
+          id="manual-servingLabel"
+          value={values.servingLabel ?? ""}
+          onChange={(e) =>
+            setValues((prev) => ({ ...prev, servingLabel: e.target.value }))
+          }
+        />
+      </div>
+
       <Button type="submit" disabled={!canSubmit || pending}>
         {pending ? "Guardando..." : "Guardar alimento"}
       </Button>
@@ -315,6 +407,7 @@ export function FoodsClient() {
               <TabsTrigger value="barcode">Código de barras</TabsTrigger>
               <TabsTrigger value="search">Buscar por nombre</TabsTrigger>
               <TabsTrigger value="manual">Alta manual</TabsTrigger>
+              <TabsTrigger value="mine">Mis alimentos</TabsTrigger>
             </TabsList>
           </div>
           <TabsContent value="barcode">
@@ -325,6 +418,9 @@ export function FoodsClient() {
           </TabsContent>
           <TabsContent value="manual">
             <ManualTab />
+          </TabsContent>
+          <TabsContent value="mine">
+            <MyFoodsTab />
           </TabsContent>
         </Tabs>
       </CardContent>

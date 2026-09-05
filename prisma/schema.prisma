@@ -44,6 +44,10 @@ model Food {
   saturatedFat Float?
   sodium       Float?
 
+  // Porción recomendada declarada por la fuente (OFF/USDA), cuando existe.
+  servingSize  Float?
+  servingLabel String?
+
   logEntries        FoodLogEntry[]
   recipeIngredients RecipeIngredient[]
 

@@ -6,6 +6,7 @@ import { normalizeOffProduct } from "./off/normalize";
 import { searchUsdaFoods } from "./usda/client";
 import { normalizeUsdaFood } from "./usda/normalize";
 import { createManualFood, persistExternalFood, type ManualFoodInput } from "./persist";
+import { listFoods } from "./search-local";
 import type { NormalizedNutrients } from "./types";
 
 export type ExternalFoodResult = NormalizedNutrients & { externalId: string };
@@ -79,4 +80,8 @@ export async function saveUsdaFoodAction(result: ExternalFoodResult): Promise<Fo
 
 export async function createManualFoodAction(input: ManualFoodInput): Promise<Food> {
   return createManualFood(input);
+}
+
+export async function listFoodsAction(): Promise<Food[]> {
+  return listFoods();
 }

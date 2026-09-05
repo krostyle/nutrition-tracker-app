@@ -64,6 +64,38 @@ describe("normalizeOffProduct", () => {
     expect(result?.calories).toBeCloseTo(400, 0);
   });
 
+  it("extrae la porción recomendada cuando la fuente la reporta", () => {
+    const result = normalizeOffProduct({
+      product_name: "Yogur natural",
+      serving_size: "25 g",
+      serving_quantity: 25,
+      nutriments: {
+        "energy-kcal_100g": 61,
+        proteins_100g: 3.5,
+        carbohydrates_100g: 4.7,
+        fat_100g: 3.2,
+      },
+    });
+
+    expect(result?.servingSize).toBe(25);
+    expect(result?.servingLabel).toBe("25 g");
+  });
+
+  it("omite la porción cuando la fuente no la reporta", () => {
+    const result = normalizeOffProduct({
+      product_name: "Agua mineral",
+      nutriments: {
+        "energy-kcal_100g": 0,
+        proteins_100g: 0,
+        carbohydrates_100g: 0,
+        fat_100g: 0,
+      },
+    });
+
+    expect(result?.servingSize).toBeUndefined();
+    expect(result?.servingLabel).toBeUndefined();
+  });
+
   it("devuelve null si falta un nutriente obligatorio", () => {
     const result = normalizeOffProduct({
       product_name: "Producto incompleto",

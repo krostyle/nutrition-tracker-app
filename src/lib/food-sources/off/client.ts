@@ -31,7 +31,10 @@ export async function searchOffProducts(query: string): Promise<OffProduct[]> {
   url.searchParams.set("search_terms", query);
   url.searchParams.set("json", "1");
   url.searchParams.set("page_size", "10");
-  url.searchParams.set("fields", "code,product_name,nutriments");
+  url.searchParams.set(
+    "fields",
+    "code,product_name,nutriments,serving_size,serving_quantity",
+  );
 
   const res = await fetch(url, { headers: OFF_HEADERS });
   if (!res.ok) {

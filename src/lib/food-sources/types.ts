@@ -8,4 +8,6 @@ export type NormalizedNutrients = {
   sugar?: number;
   saturatedFat?: number;
   sodium?: number;
+  servingSize?: number;
+  servingLabel?: string;
 };

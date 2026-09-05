@@ -50,6 +50,56 @@ describe("normalizeUsdaFood", () => {
     });
   });
 
+  it("extrae la porción recomendada usando el texto de porción casera si existe", () => {
+    const result = normalizeUsdaFood({
+      description: "Yogurt, plain",
+      servingSize: 227,
+      servingSizeUnit: "g",
+      householdServingFullText: "1 cup",
+      foodNutrients: [
+        { nutrientId: 1008, value: 61 },
+        { nutrientId: 1003, value: 3.5 },
+        { nutrientId: 1005, value: 4.7 },
+        { nutrientId: 1004, value: 3.2 },
+      ],
+    });
+
+    expect(result?.servingSize).toBe(227);
+    expect(result?.servingLabel).toBe("1 cup");
+  });
+
+  it("arma la porción con tamaño y unidad si no hay texto de porción casera", () => {
+    const result = normalizeUsdaFood({
+      description: "Yogurt, plain",
+      servingSize: 80,
+      servingSizeUnit: "g",
+      foodNutrients: [
+        { nutrientId: 1008, value: 61 },
+        { nutrientId: 1003, value: 3.5 },
+        { nutrientId: 1005, value: 4.7 },
+        { nutrientId: 1004, value: 3.2 },
+      ],
+    });
+
+    expect(result?.servingSize).toBe(80);
+    expect(result?.servingLabel).toBe("80 g");
+  });
+
+  it("omite la porción cuando la fuente no la reporta", () => {
+    const result = normalizeUsdaFood({
+      description: "Bananas, raw",
+      foodNutrients: [
+        { nutrientId: 1008, value: 89 },
+        { nutrientId: 1003, value: 1.09 },
+        { nutrientId: 1005, value: 22.8 },
+        { nutrientId: 1004, value: 0.33 },
+      ],
+    });
+
+    expect(result?.servingSize).toBeUndefined();
+    expect(result?.servingLabel).toBeUndefined();
+  });
+
   it("devuelve null si falta un nutriente obligatorio", () => {
     const result = normalizeUsdaFood({
       description: "Alimento incompleto",

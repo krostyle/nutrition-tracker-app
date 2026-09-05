@@ -4,6 +4,8 @@ export type OffProduct = {
   code?: string;
   product_name?: string;
   nutriments?: Record<string, number | undefined>;
+  serving_size?: string;
+  serving_quantity?: number;
 };
 
 export type { NormalizedNutrients };
@@ -37,6 +39,11 @@ export function normalizeOffProduct(product: OffProduct): NormalizedNutrients | 
   if (n.sugars_100g !== undefined) result.sugar = n.sugars_100g;
   if (n["saturated-fat_100g"] !== undefined) result.saturatedFat = n["saturated-fat_100g"];
   if (n.sodium_100g !== undefined) result.sodium = n.sodium_100g * 1000;
+
+  if (product.serving_quantity !== undefined) {
+    result.servingSize = product.serving_quantity;
+    result.servingLabel = product.serving_size ?? `${product.serving_quantity} g`;
+  }
 
   return result;
 }

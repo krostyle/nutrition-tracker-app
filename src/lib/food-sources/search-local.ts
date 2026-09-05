@@ -11,3 +11,10 @@ export async function searchLocalFoods(query: string): Promise<Food[]> {
     take: 10,
   });
 }
+
+export async function listFoods(): Promise<Food[]> {
+  return prisma.food.findMany({
+    orderBy: { name: "asc" },
+    take: 50,
+  });
+}

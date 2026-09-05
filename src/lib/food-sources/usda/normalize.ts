@@ -9,6 +9,9 @@ export type UsdaFood = {
   fdcId?: number;
   description?: string;
   foodNutrients?: UsdaFoodNutrient[];
+  servingSize?: number;
+  servingSizeUnit?: string;
+  householdServingFullText?: string;
 };
 
 export type { NormalizedNutrients };
@@ -58,6 +61,13 @@ export function normalizeUsdaFood(food: UsdaFood): NormalizedNutrients | null {
   if (sugar !== undefined) result.sugar = sugar;
   if (saturatedFat !== undefined) result.saturatedFat = saturatedFat;
   if (sodium !== undefined) result.sodium = sodium;
+
+  if (food.servingSize !== undefined) {
+    result.servingSize = food.servingSize;
+    result.servingLabel =
+      food.householdServingFullText ??
+      `${food.servingSize} ${food.servingSizeUnit ?? "g"}`;
+  }
 
   return result;
 }

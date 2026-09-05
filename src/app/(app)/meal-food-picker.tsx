@@ -528,15 +528,23 @@ export function MealFoodPicker({
           </div>
         ) : (
           <Tabs defaultValue="saved">
-            <div className="-mx-1 overflow-x-auto px-1">
-              <TabsList>
-                <TabsTrigger value="saved">Guardados</TabsTrigger>
-                <TabsTrigger value="search">Por nombre</TabsTrigger>
-                <TabsTrigger value="barcode">Código de barras</TabsTrigger>
-                <TabsTrigger value="recipes">Recetas</TabsTrigger>
-                <TabsTrigger value="manual">Manual</TabsTrigger>
-              </TabsList>
-            </div>
+            <TabsList className="w-full">
+              <TabsTrigger value="saved" className="px-1 text-xs sm:px-1.5 sm:text-sm">
+                Guardados
+              </TabsTrigger>
+              <TabsTrigger value="search" className="px-1 text-xs sm:px-1.5 sm:text-sm">
+                Buscar
+              </TabsTrigger>
+              <TabsTrigger value="barcode" className="px-1 text-xs sm:px-1.5 sm:text-sm">
+                Escanear
+              </TabsTrigger>
+              <TabsTrigger value="recipes" className="px-1 text-xs sm:px-1.5 sm:text-sm">
+                Recetas
+              </TabsTrigger>
+              <TabsTrigger value="manual" className="px-1 text-xs sm:px-1.5 sm:text-sm">
+                Manual
+              </TabsTrigger>
+            </TabsList>
             <TabsContent value="saved">
               <SavedFoodsPickerTab onSelect={setCandidate} />
             </TabsContent>

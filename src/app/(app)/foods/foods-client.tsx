@@ -68,8 +68,8 @@ function BarcodeTab() {
 
       {notFound && (
         <p className="text-sm text-muted-foreground">
-          No se encontró en Open Food Facts. Podés cargarlo en la pestaña &quot;Alta
-          manual&quot;.
+          No se encontró en Open Food Facts. Podés cargarlo en la pestaña
+          &quot;Manual&quot;.
         </p>
       )}
 
@@ -402,14 +402,12 @@ export function FoodsClient() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="barcode">
-          <div className="-mx-1 overflow-x-auto px-1">
-            <TabsList>
-              <TabsTrigger value="barcode">Código de barras</TabsTrigger>
-              <TabsTrigger value="search">Buscar por nombre</TabsTrigger>
-              <TabsTrigger value="manual">Alta manual</TabsTrigger>
-              <TabsTrigger value="mine">Mis alimentos</TabsTrigger>
-            </TabsList>
-          </div>
+          <TabsList className="w-full">
+            <TabsTrigger value="barcode">Escanear</TabsTrigger>
+            <TabsTrigger value="search">Buscar</TabsTrigger>
+            <TabsTrigger value="manual">Manual</TabsTrigger>
+            <TabsTrigger value="mine">Guardados</TabsTrigger>
+          </TabsList>
           <TabsContent value="barcode">
             <BarcodeTab />
           </TabsContent>

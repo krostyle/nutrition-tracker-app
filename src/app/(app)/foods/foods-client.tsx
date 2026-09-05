@@ -423,7 +423,7 @@ export function FoodsClient() {
             <TabsList
               className={cn(
                 floatingTabListClass,
-                "border border-border/50 bg-popover shadow-lg ring-1 ring-foreground/10",
+                "w-full max-w-sm border border-border/50 bg-popover shadow-lg ring-1 ring-foreground/10",
               )}
             >
               <TabsTrigger value="barcode" className={floatingTabTriggerClass}>

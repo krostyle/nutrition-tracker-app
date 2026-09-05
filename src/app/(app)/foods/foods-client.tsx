@@ -402,22 +402,34 @@ export function FoodsClient() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="barcode">
-          <TabsList className="w-full">
-            <TabsTrigger value="barcode">Escanear</TabsTrigger>
-            <TabsTrigger value="search">Buscar</TabsTrigger>
-            <TabsTrigger value="manual">Manual</TabsTrigger>
-            <TabsTrigger value="mine">Guardados</TabsTrigger>
-          </TabsList>
-          <TabsContent value="barcode">
+          <div className="hidden sm:block">
+            <TabsList className="w-full">
+              <TabsTrigger value="barcode">Escanear</TabsTrigger>
+              <TabsTrigger value="search">Buscar</TabsTrigger>
+              <TabsTrigger value="manual">Manual</TabsTrigger>
+              <TabsTrigger value="mine">Guardados</TabsTrigger>
+            </TabsList>
+          </div>
+
+          <div className="fixed inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 flex justify-center px-4 sm:hidden">
+            <TabsList className="border border-border/50 bg-popover shadow-lg ring-1 ring-foreground/10">
+              <TabsTrigger value="barcode">Escanear</TabsTrigger>
+              <TabsTrigger value="search">Buscar</TabsTrigger>
+              <TabsTrigger value="manual">Manual</TabsTrigger>
+              <TabsTrigger value="mine">Guardados</TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="barcode" className="pb-20 sm:pb-0">
             <BarcodeTab />
           </TabsContent>
-          <TabsContent value="search">
+          <TabsContent value="search" className="pb-20 sm:pb-0">
             <SearchTab />
           </TabsContent>
-          <TabsContent value="manual">
+          <TabsContent value="manual" className="pb-20 sm:pb-0">
             <ManualTab />
           </TabsContent>
-          <TabsContent value="mine">
+          <TabsContent value="mine" className="pb-20 sm:pb-0">
             <MyFoodsTab />
           </TabsContent>
         </Tabs>

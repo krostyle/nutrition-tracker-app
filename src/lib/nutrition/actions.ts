@@ -1,6 +1,7 @@
 "use server";
 
 import type { Food, Goal, MealType } from "@/generated/prisma/client";
+import { runAction, type ActionResult } from "@/lib/action-result";
 import type { ExternalFoodResult } from "@/lib/food-sources/actions";
 import { createManualFood, persistExternalFood, type ManualFoodInput } from "@/lib/food-sources/persist";
 import { searchLocalFoods } from "@/lib/food-sources/search-local";
@@ -69,8 +70,8 @@ export async function getGoalAction(): Promise<Goal | null> {
   return getGoal();
 }
 
-export async function saveGoalAction(input: GoalInput): Promise<Goal> {
-  return saveGoal(input);
+export async function saveGoalAction(input: GoalInput): Promise<ActionResult<Goal>> {
+  return runAction(() => saveGoal(input), "No pudimos guardar la meta. Probá de nuevo.");
 }
 
 export type CreateEntryActionInput = {
@@ -81,27 +82,33 @@ export type CreateEntryActionInput = {
   dateKey: string;
 };
 
+const LOG_ENTRY_ERROR = "No pudimos guardar el registro. Probá de nuevo.";
+
 export async function createLogEntryAction(
   input: CreateEntryActionInput,
-): Promise<FoodLogEntryWithDetails> {
-  return createLogEntry({
-    foodId: input.foodId,
-    recipeId: input.recipeId,
-    quantity: input.quantity,
-    mealType: input.mealType,
-    date: parseDateKey(input.dateKey),
-  });
+): Promise<ActionResult<FoodLogEntryWithDetails>> {
+  return runAction(
+    () =>
+      createLogEntry({
+        foodId: input.foodId,
+        recipeId: input.recipeId,
+        quantity: input.quantity,
+        mealType: input.mealType,
+        date: parseDateKey(input.dateKey),
+      }),
+    LOG_ENTRY_ERROR,
+  );
 }
 
 export async function updateLogEntryQuantityAction(
   id: string,
   quantity: number,
-): Promise<FoodLogEntryWithDetails> {
-  return updateLogEntryQuantity(id, quantity);
+): Promise<ActionResult<FoodLogEntryWithDetails>> {
+  return runAction(() => updateLogEntryQuantity(id, quantity), LOG_ENTRY_ERROR);
 }
 
-export async function deleteLogEntryAction(id: string): Promise<void> {
-  await deleteLogEntry(id);
+export async function deleteLogEntryAction(id: string): Promise<ActionResult<void>> {
+  return runAction(() => deleteLogEntry(id), "No pudimos eliminar el registro. Probá de nuevo.");
 }
 
 export async function searchLocalFoodsAction(query: string): Promise<Food[]> {
@@ -119,31 +126,33 @@ export async function addFoodToMealAction(
   quantity: number,
   mealType: MealType,
   dateKey: string,
-): Promise<FoodLogEntryWithDetails> {
-  if (food.kind === "recipe") {
+): Promise<ActionResult<FoodLogEntryWithDetails>> {
+  return runAction(async () => {
+    if (food.kind === "recipe") {
+      return createLogEntry({
+        recipeId: food.recipeId,
+        quantity,
+        mealType,
+        date: parseDateKey(dateKey),
+      });
+    }
+
+    let foodId: string;
+
+    if (food.kind === "existing") {
+      foodId = food.foodId;
+    } else if (food.kind === "manual") {
+      foodId = (await createManualFood(food.input)).id;
+    } else {
+      const { externalId, ...nutrients } = food.result;
+      foodId = (await persistExternalFood(food.kind, externalId, nutrients)).id;
+    }
+
     return createLogEntry({
-      recipeId: food.recipeId,
+      foodId,
       quantity,
       mealType,
       date: parseDateKey(dateKey),
     });
-  }
-
-  let foodId: string;
-
-  if (food.kind === "existing") {
-    foodId = food.foodId;
-  } else if (food.kind === "manual") {
-    foodId = (await createManualFood(food.input)).id;
-  } else {
-    const { externalId, ...nutrients } = food.result;
-    foodId = (await persistExternalFood(food.kind, externalId, nutrients)).id;
-  }
-
-  return createLogEntry({
-    foodId,
-    quantity,
-    mealType,
-    date: parseDateKey(dateKey),
-  });
+  }, LOG_ENTRY_ERROR);
 }

@@ -45,18 +45,22 @@ function BarcodeTab() {
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<ExternalFoodResult | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!barcode.trim()) return;
     setResult(null);
     setNotFound(false);
+    setError(null);
     startTransition(async () => {
       const lookup = await lookupBarcodeAction(barcode.trim());
-      if (lookup.found) {
+      if (lookup.status === "found") {
         setResult(lookup.result);
-      } else {
+      } else if (lookup.status === "not_found") {
         setNotFound(true);
+      } else {
+        setError(lookup.message);
       }
     });
   }
@@ -80,6 +84,7 @@ function BarcodeTab() {
           &quot;Manual&quot;.
         </p>
       )}
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       {pending && <FoodCardSkeleton />}
       {!pending && result && (
@@ -294,6 +299,7 @@ function ManualTab() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const canSubmit =
     name.trim().length > 0 &&
@@ -321,9 +327,14 @@ function ManualTab() {
       ...(values.servingLabel?.trim() ? { servingLabel: values.servingLabel.trim() } : {}),
     };
 
+    setError(null);
     startTransition(async () => {
-      await createManualFoodAction(input);
-      setSaved(true);
+      const outcome = await createManualFoodAction(input);
+      if (outcome.ok) {
+        setSaved(true);
+      } else {
+        setError(outcome.message);
+      }
     });
   }
 
@@ -333,6 +344,7 @@ function ManualTab() {
 
   return (
     <form onSubmit={handleSubmit} className="flex max-w-md flex-col gap-4">
+      {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="manual-name">Nombre</Label>
         <Input

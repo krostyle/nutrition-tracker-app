@@ -1,6 +1,7 @@
 "use server";
 
-import type { BodyMeasurement, Profile } from "@/generated/prisma/client";
+import type { BodyMeasurement, Goal, Profile } from "@/generated/prisma/client";
+import { runAction, type ActionResult } from "@/lib/action-result";
 import { createMeasurement, getLatestMeasurement, listMeasurements, type CreateMeasurementInput } from "./body-measurements";
 import { saveGoal, type GoalInput } from "./goal";
 import { getProfile, saveProfile, type ProfileInput } from "./profile";
@@ -10,8 +11,8 @@ export async function getProfileAction(): Promise<Profile | null> {
   return getProfile();
 }
 
-export async function saveProfileAction(input: ProfileInput): Promise<Profile> {
-  return saveProfile(input);
+export async function saveProfileAction(input: ProfileInput): Promise<ActionResult<Profile>> {
+  return runAction(() => saveProfile(input), "No pudimos guardar los objetivos. Probá de nuevo.");
 }
 
 export type CreateMeasurementActionInput = {
@@ -24,7 +25,7 @@ export type CreateMeasurementActionInput = {
 
 export async function createMeasurementAction(
   input: CreateMeasurementActionInput,
-): Promise<BodyMeasurement> {
+): Promise<ActionResult<BodyMeasurement>> {
   const data: CreateMeasurementInput = {
     date: new Date(`${input.dateKey}T00:00:00.000Z`),
     weightKg: input.weightKg,
@@ -32,7 +33,7 @@ export async function createMeasurementAction(
     waistCm: input.waistCm,
     hipCm: input.hipCm,
   };
-  return createMeasurement(data);
+  return runAction(() => createMeasurement(data), "No pudimos guardar la medición. Probá de nuevo.");
 }
 
 export async function listMeasurementsAction(): Promise<BodyMeasurement[]> {
@@ -65,6 +66,8 @@ export async function getRecommendationAction(): Promise<RecommendationResult> {
   return { status: "ok", recommendation };
 }
 
-export async function applyRecommendationAsGoalAction(input: GoalInput) {
-  return saveGoal(input);
+export async function applyRecommendationAsGoalAction(
+  input: GoalInput,
+): Promise<ActionResult<Goal>> {
+  return runAction(() => saveGoal(input), "No pudimos aplicar la recomendación. Probá de nuevo.");
 }

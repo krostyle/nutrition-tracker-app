@@ -55,6 +55,7 @@ function GoalForm() {
   const [loaded, setLoaded] = useState(false);
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getGoalAction().then((goal) => {
@@ -76,14 +77,19 @@ function GoalForm() {
     e.preventDefault();
     if (!canSubmit) return;
 
+    setError(null);
     startTransition(async () => {
-      await saveGoalAction({
+      const outcome = await saveGoalAction({
         calories: Number(values.calories),
         protein: Number(values.protein),
         carbs: Number(values.carbs),
         fat: Number(values.fat),
       });
-      setSaved(true);
+      if (outcome.ok) {
+        setSaved(true);
+      } else {
+        setError(outcome.message);
+      }
     });
   }
 
@@ -103,6 +109,7 @@ function GoalForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {error && <p className="text-sm text-destructive">{error}</p>}
       {GOAL_FIELDS.map((field) => (
         <div key={field.key} className="flex flex-col gap-1.5">
           <Label htmlFor={`goal-${field.key}`}>{field.label}</Label>
@@ -129,6 +136,7 @@ function RecommendationPanel({ onApplied }: { onApplied: () => void }) {
   const [result, setResult] = useState<RecommendationResult | null>(null);
   const [pending, startTransition] = useTransition();
   const [applied, setApplied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getRecommendationAction().then(setResult);
@@ -157,15 +165,20 @@ function RecommendationPanel({ onApplied }: { onApplied: () => void }) {
   const r = result.recommendation;
 
   function apply() {
+    setError(null);
     startTransition(async () => {
-      await applyRecommendationAsGoalAction({
+      const outcome = await applyRecommendationAsGoalAction({
         calories: round(r.calories),
         protein: round(r.protein),
         carbs: round(r.carbs),
         fat: round(r.fat),
       });
-      setApplied(true);
-      onApplied();
+      if (outcome.ok) {
+        setApplied(true);
+        onApplied();
+      } else {
+        setError(outcome.message);
+      }
     });
   }
 
@@ -200,6 +213,7 @@ function RecommendationPanel({ onApplied }: { onApplied: () => void }) {
         <Button size="sm" disabled={pending} onClick={apply}>
           {pending ? "Aplicando..." : applied ? "Aplicada" : "Aplicar como meta"}
         </Button>
+        {error && <p className="text-sm text-destructive">{error}</p>}
       </CardContent>
     </Card>
   );
@@ -252,27 +266,34 @@ function ObjectivesTab({
   const [goalType, setGoalType] = useState<GoalType>(profile?.goalType ?? "MAINTAIN");
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const canSubmit = age.trim() !== "" && heightCm.trim() !== "" && Number(age) > 0 && Number(heightCm) > 0;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
+    setError(null);
     startTransition(async () => {
-      await saveProfileAction({
+      const outcome = await saveProfileAction({
         sex,
         age: Number(age),
         heightCm: Number(heightCm),
         activityLevel,
         goalType,
       });
-      setSaved(true);
-      onSaved();
+      if (outcome.ok) {
+        setSaved(true);
+        onSaved();
+      } else {
+        setError(outcome.message);
+      }
     });
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="flex flex-col gap-1.5">
         <Label>Sexo biológico</Label>
         <Select
@@ -389,6 +410,7 @@ function MeasurementsTab({
   const [hipCm, setHipCm] = useState("");
   const [pending, startTransition] = useTransition();
   const [history, setHistory] = useState<BodyMeasurement[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const needsHip = profile?.sex === "FEMALE";
 
@@ -409,14 +431,19 @@ function MeasurementsTab({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
+    setError(null);
     startTransition(async () => {
-      await createMeasurementAction({
+      const outcome = await createMeasurementAction({
         dateKey: todayDateKey(),
         weightKg: Number(weightKg),
         neckCm: Number(neckCm),
         waistCm: Number(waistCm),
         ...(needsHip ? { hipCm: Number(hipCm) } : {}),
       });
+      if (!outcome.ok) {
+        setError(outcome.message);
+        return;
+      }
       setWeightKg("");
       setNeckCm("");
       setWaistCm("");
@@ -429,6 +456,7 @@ function MeasurementsTab({
   return (
     <div className="flex flex-col gap-6">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {error && <p className="text-sm text-destructive">{error}</p>}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="measurement-weight">Peso (kg)</Label>
           <Input

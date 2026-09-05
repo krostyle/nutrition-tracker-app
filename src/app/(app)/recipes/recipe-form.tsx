@@ -74,7 +74,7 @@ export function RecipeForm({
 }: {
   initial?: RecipeFormInitial;
   submitLabel: string;
-  onSubmit: (input: RecipeInput) => Promise<void>;
+  onSubmit: (input: RecipeInput) => Promise<{ ok: true } | { ok: false; message: string }>;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [servings, setServings] = useState(String(initial?.servings ?? 1));
@@ -125,10 +125,9 @@ export function RecipeForm({
     };
 
     startTransition(async () => {
-      try {
-        await onSubmit(input);
-      } catch {
-        setError("No se pudo guardar la receta.");
+      const outcome = await onSubmit(input);
+      if (!outcome.ok) {
+        setError(outcome.message);
       }
     });
   }

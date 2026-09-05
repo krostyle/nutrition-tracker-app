@@ -58,61 +58,75 @@ function EntryRow({
   const [editing, setEditing] = useState(false);
   const [quantity, setQuantity] = useState(String(entry.quantity));
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   const calories = round(entry.calories);
 
   function save() {
     const value = Number(quantity);
     if (!value || value <= 0) return;
+    setError(null);
     startTransition(async () => {
-      await updateLogEntryQuantityAction(entry.id, value);
-      setEditing(false);
-      onChanged();
+      const outcome = await updateLogEntryQuantityAction(entry.id, value);
+      if (outcome.ok) {
+        setEditing(false);
+        onChanged();
+      } else {
+        setError(outcome.message);
+      }
     });
   }
 
   function remove() {
+    setError(null);
     startTransition(async () => {
-      await deleteLogEntryAction(entry.id);
-      onChanged();
+      const outcome = await deleteLogEntryAction(entry.id);
+      if (outcome.ok) {
+        onChanged();
+      } else {
+        setError(outcome.message);
+      }
     });
   }
 
   return (
-    <div className="flex items-center justify-between gap-2 border-b py-2 text-sm last:border-b-0">
-      <div className="min-w-0 flex-1">
-        <p className="truncate">{name}</p>
-        <p className="text-muted-foreground">
+    <div className="flex flex-col gap-1 border-b py-2 last:border-b-0">
+      <div className="flex items-center justify-between gap-2 text-sm">
+        <div className="min-w-0 flex-1">
+          <p className="truncate">{name}</p>
+          <p className="text-muted-foreground">
+            {editing ? (
+              <span className="inline-flex items-center gap-1">
+                <Input
+                  className="h-6 w-20"
+                  type="number"
+                  step="any"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                />
+                {unit}
+              </span>
+            ) : (
+              `${entry.quantity} ${unit} · ${calories} kcal`
+            )}
+          </p>
+        </div>
+        <div className="flex shrink-0 gap-1">
           {editing ? (
-            <span className="inline-flex items-center gap-1">
-              <Input
-                className="h-6 w-20"
-                type="number"
-                step="any"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-              />
-              {unit}
-            </span>
+            <Button size="sm" variant="outline" disabled={pending} onClick={save}>
+              Guardar
+            </Button>
           ) : (
-            `${entry.quantity} ${unit} · ${calories} kcal`
+            <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+              Editar
+            </Button>
           )}
-        </p>
-      </div>
-      <div className="flex shrink-0 gap-1">
-        {editing ? (
-          <Button size="sm" variant="outline" disabled={pending} onClick={save}>
-            Guardar
+          <Button size="sm" variant="outline" disabled={pending} onClick={remove}>
+            Eliminar
           </Button>
-        ) : (
-          <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
-            Editar
-          </Button>
-        )}
-        <Button size="sm" variant="outline" disabled={pending} onClick={remove}>
-          Eliminar
-        </Button>
+        </div>
       </div>
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }

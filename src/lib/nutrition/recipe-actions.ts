@@ -1,6 +1,7 @@
 "use server";
 
 import type { Recipe } from "@/generated/prisma/client";
+import { runAction, type ActionResult } from "@/lib/action-result";
 import { calculateRecipeNutrients, type RecipeCalculationResult } from "./recipe";
 import {
   createRecipe,
@@ -36,17 +37,21 @@ export async function getRecipeDetailAction(id: string): Promise<RecipeDetail | 
   return { recipe, calculation };
 }
 
-export async function createRecipeAction(input: RecipeInput): Promise<RecipeWithIngredients> {
-  return createRecipe(input);
+const RECIPE_SAVE_ERROR = "No pudimos guardar la receta. Probá de nuevo.";
+
+export async function createRecipeAction(
+  input: RecipeInput,
+): Promise<ActionResult<RecipeWithIngredients>> {
+  return runAction(() => createRecipe(input), RECIPE_SAVE_ERROR);
 }
 
 export async function updateRecipeAction(
   id: string,
   input: RecipeInput,
-): Promise<RecipeWithIngredients> {
-  return updateRecipe(id, input);
+): Promise<ActionResult<RecipeWithIngredients>> {
+  return runAction(() => updateRecipe(id, input), RECIPE_SAVE_ERROR);
 }
 
-export async function deleteRecipeAction(id: string): Promise<void> {
-  await deleteRecipe(id);
+export async function deleteRecipeAction(id: string): Promise<ActionResult<void>> {
+  return runAction(() => deleteRecipe(id), "No pudimos eliminar la receta. Probá de nuevo.");
 }

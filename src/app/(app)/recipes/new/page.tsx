@@ -18,8 +18,10 @@ export default function NewRecipePage() {
           <RecipeForm
             submitLabel="Crear receta"
             onSubmit={async (input) => {
-              const recipe = await createRecipeAction(input);
-              router.push(`/recipes/${recipe.id}`);
+              const outcome = await createRecipeAction(input);
+              if (!outcome.ok) return outcome;
+              router.push(`/recipes/${outcome.data.id}`);
+              return { ok: true };
             }}
           />
         </CardContent>

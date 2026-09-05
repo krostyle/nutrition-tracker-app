@@ -29,15 +29,21 @@ export function RecipeDetailClient({ id }: { id: string }) {
   const router = useRouter();
   const [detail, setDetail] = useState<RecipeDetail | null | undefined>(undefined);
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getRecipeDetailAction(id).then(setDetail);
   }, [id]);
 
   function handleDelete() {
+    setError(null);
     startTransition(async () => {
-      await deleteRecipeAction(id);
-      router.push("/recipes");
+      const outcome = await deleteRecipeAction(id);
+      if (outcome.ok) {
+        router.push("/recipes");
+      } else {
+        setError(outcome.message);
+      }
     });
   }
 
@@ -90,6 +96,7 @@ export function RecipeDetailClient({ id }: { id: string }) {
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
+        {error && <p className="text-sm text-destructive">{error}</p>}
         <div>
           <h3 className="mb-2 text-sm font-medium">Ingredientes</h3>
           <div className="flex flex-col gap-1">

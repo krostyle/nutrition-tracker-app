@@ -58,8 +58,10 @@ export function EditRecipeClient({ id }: { id: string }) {
           initial={initial}
           submitLabel="Guardar cambios"
           onSubmit={async (input) => {
-            await updateRecipeAction(id, input);
+            const outcome = await updateRecipeAction(id, input);
+            if (!outcome.ok) return outcome;
             router.push(`/recipes/${id}`);
+            return { ok: true };
           }}
         />
       </CardContent>

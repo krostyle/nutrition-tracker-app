@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import type { ActionResult } from "@/lib/action-result";
 import type { ExternalFoodResult } from "@/lib/food-sources/actions";
 import { MacroRow, NutritionFacts, scaleToServing } from "./nutrition-facts";
 
@@ -21,17 +22,23 @@ export function FoodResultCard({
 }: {
   result: ExternalFoodResult;
   source: "OFF" | "USDA";
-  onSave: () => Promise<unknown>;
+  onSave: () => Promise<ActionResult<unknown>>;
 }) {
   const [open, setOpen] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function handleSave(e: React.MouseEvent) {
     e.stopPropagation();
+    setError(null);
     startTransition(async () => {
-      await onSave();
-      setSaved(true);
+      const outcome = await onSave();
+      if (outcome.ok) {
+        setSaved(true);
+      } else {
+        setError(outcome.message);
+      }
     });
   }
 
@@ -61,7 +68,7 @@ export function FoodResultCard({
             {source}
           </Badge>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-1.5">
           {saved ? (
             <Button size="sm" disabled variant="outline">
               Guardado
@@ -71,6 +78,7 @@ export function FoodResultCard({
               {pending ? "Guardando..." : "Guardar"}
             </Button>
           )}
+          {error && <p className="text-xs text-destructive">{error}</p>}
         </CardContent>
       </Card>
 
@@ -105,6 +113,7 @@ export function FoodResultCard({
               {pending ? "Guardando..." : "Guardar"}
             </Button>
           )}
+          {error && <p className="text-xs text-destructive">{error}</p>}
         </DialogContent>
       </Dialog>
     </>

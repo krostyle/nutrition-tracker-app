@@ -299,18 +299,22 @@ function BarcodePickerTab({ onSelect }: { onSelect: (c: Candidate) => void }) {
   const [pending, startTransition] = useTransition();
   const [notFound, setNotFound] = useState(false);
   const [result, setResult] = useState<ExternalFoodResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!barcode.trim()) return;
     setResult(null);
     setNotFound(false);
+    setError(null);
     startTransition(async () => {
       const lookup = await lookupBarcodeAction(barcode.trim());
-      if (lookup.found) {
+      if (lookup.status === "found") {
         setResult(lookup.result);
-      } else {
+      } else if (lookup.status === "not_found") {
         setNotFound(true);
+      } else {
+        setError(lookup.message);
       }
     });
   }
@@ -332,6 +336,7 @@ function BarcodePickerTab({ onSelect }: { onSelect: (c: Candidate) => void }) {
           No se encontró en Open Food Facts. Podés cargarlo en la pestaña &quot;Manual&quot;.
         </p>
       )}
+      {error && <p className="text-sm text-destructive">{error}</p>}
       {result && (
         <div className="rounded-lg border">
           <ResultRow
@@ -485,9 +490,11 @@ export function MealFoodPicker({
 }) {
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   function reset() {
     setCandidate(null);
+    setError(null);
   }
 
   function handleOpenChange(next: boolean) {
@@ -497,6 +504,7 @@ export function MealFoodPicker({
 
   function confirmCandidate(quantity: number) {
     if (!candidate) return;
+    setError(null);
     startTransition(async () => {
       const input =
         candidate.kind === "existing"
@@ -504,18 +512,27 @@ export function MealFoodPicker({
           : candidate.kind === "recipe"
             ? ({ kind: "recipe", recipeId: candidate.recipeId } as const)
             : ({ kind: candidate.kind, result: candidate.result } as const);
-      await addFoodToMealAction(input, quantity, mealType, dateKey);
-      reset();
-      onAdded();
-      onOpenChange(false);
+      const outcome = await addFoodToMealAction(input, quantity, mealType, dateKey);
+      if (outcome.ok) {
+        reset();
+        onAdded();
+        onOpenChange(false);
+      } else {
+        setError(outcome.message);
+      }
     });
   }
 
   function confirmManual(input: ManualFoodInput, grams: number) {
+    setError(null);
     startTransition(async () => {
-      await addFoodToMealAction({ kind: "manual", input }, grams, mealType, dateKey);
-      onAdded();
-      onOpenChange(false);
+      const outcome = await addFoodToMealAction({ kind: "manual", input }, grams, mealType, dateKey);
+      if (outcome.ok) {
+        onAdded();
+        onOpenChange(false);
+      } else {
+        setError(outcome.message);
+      }
     });
   }
 
@@ -526,6 +543,8 @@ export function MealFoodPicker({
           <DialogTitle>Agregar a {mealLabel}</DialogTitle>
           <DialogDescription>Buscá un alimento o cargalo a mano.</DialogDescription>
         </DialogHeader>
+
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
         {candidate ? (
           <div className="flex flex-col gap-2">

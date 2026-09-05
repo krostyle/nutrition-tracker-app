@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,24 +12,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  createLogEntryAction,
   deleteLogEntryAction,
   getDaySummaryAction,
-  searchLocalFoodsAction,
   updateLogEntryGramsAction,
   type DaySummary,
 } from "@/lib/nutrition/actions";
 import { shiftDateKey, todayDateKey } from "@/lib/nutrition/date";
 import type { Food, FoodLogEntry, MealType } from "@/generated/prisma/client";
+import { MealFoodPicker } from "./meal-food-picker";
 
 const MEAL_TYPES: MealType[] = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"];
 
@@ -119,119 +112,6 @@ function EntryRow({
   );
 }
 
-function AddEntryForm({
-  dateKey,
-  onAdded,
-}: {
-  dateKey: string;
-  onAdded: () => void;
-}) {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Food[]>([]);
-  const [selected, setSelected] = useState<Food | null>(null);
-  const [grams, setGrams] = useState("100");
-  const [mealType, setMealType] = useState<MealType>("BREAKFAST");
-  const [pending, startTransition] = useTransition();
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function handleQueryChange(value: string) {
-    setQuery(value);
-    setSelected(null);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!value.trim()) {
-      setResults([]);
-      return;
-    }
-    debounceRef.current = setTimeout(async () => {
-      const found = await searchLocalFoodsAction(value.trim());
-      setResults(found);
-    }, 400);
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selected) return;
-    const value = Number(grams);
-    if (!value || value <= 0) return;
-
-    startTransition(async () => {
-      await createLogEntryAction({
-        foodId: selected.id,
-        grams: value,
-        mealType,
-        dateKey,
-      });
-      setQuery("");
-      setResults([]);
-      setSelected(null);
-      setGrams("100");
-      onAdded();
-    });
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <Input
-          placeholder="Buscar alimento guardado..."
-          value={selected ? selected.name : query}
-          onChange={(e) => handleQueryChange(e.target.value)}
-        />
-        <Select
-          items={MEAL_LABELS}
-          value={mealType}
-          onValueChange={(value) => setMealType(value as MealType)}
-        >
-          <SelectTrigger className="w-full sm:w-36">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {MEAL_TYPES.map((type) => (
-              <SelectItem key={type} value={type}>
-                {MEAL_LABELS[type]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {!selected && results.length > 0 && (
-        <div className="flex max-h-60 flex-col overflow-y-auto rounded-lg border">
-          {results.map((food) => (
-            <button
-              type="button"
-              key={food.id}
-              className="border-b px-2 py-1 text-left text-sm last:border-b-0 hover:bg-muted"
-              onClick={() => {
-                setSelected(food);
-                setResults([]);
-              }}
-            >
-              {food.name}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {selected && (
-        <div className="flex items-center gap-2">
-          <Input
-            className="w-24"
-            type="number"
-            step="any"
-            value={grams}
-            onChange={(e) => setGrams(e.target.value)}
-          />
-          <span className="text-sm text-muted-foreground">gramos</span>
-          <Button type="submit" size="sm" disabled={pending}>
-            {pending ? "Agregando..." : "Agregar"}
-          </Button>
-        </div>
-      )}
-    </form>
-  );
-}
-
 function DashboardSkeleton() {
   return (
     <div className="flex w-full max-w-2xl flex-col gap-6">
@@ -272,6 +152,7 @@ function DashboardSkeleton() {
 export function DashboardClient() {
   const [dateKey, setDateKey] = useState(todayDateKey());
   const [summary, setSummary] = useState<DaySummary | null>(null);
+  const [openMealType, setOpenMealType] = useState<MealType | null>(null);
   const [pending, startTransition] = useTransition();
 
   function refresh() {
@@ -337,8 +218,16 @@ export function DashboardClient() {
 
       {MEAL_TYPES.map((mealType) => (
         <Card key={mealType}>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">{MEAL_LABELS[mealType]}</CardTitle>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              aria-label={`Agregar a ${MEAL_LABELS[mealType]}`}
+              onClick={() => setOpenMealType(mealType)}
+            >
+              <Plus className="size-4" />
+            </Button>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             {summary?.entriesByMeal[mealType].length ? (
@@ -352,14 +241,18 @@ export function DashboardClient() {
         </Card>
       ))}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Agregar alimento</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <AddEntryForm dateKey={dateKey} onAdded={refresh} />
-        </CardContent>
-      </Card>
+      {openMealType && (
+        <MealFoodPicker
+          open
+          onOpenChange={(next) => {
+            if (!next) setOpenMealType(null);
+          }}
+          mealLabel={MEAL_LABELS[openMealType]}
+          mealType={openMealType}
+          dateKey={dateKey}
+          onAdded={refresh}
+        />
+      )}
 
       {pending && <p className="text-center text-xs text-muted-foreground">Actualizando...</p>}
     </div>

@@ -26,6 +26,25 @@ enum MealType {
   SNACK
 }
 
+enum Sex {
+  MALE
+  FEMALE
+}
+
+enum ActivityLevel {
+  SEDENTARY
+  LIGHT
+  MODERATE
+  ACTIVE
+  VERY_ACTIVE
+}
+
+enum GoalType {
+  LOSE_FAT
+  MAINTAIN
+  GAIN_MUSCLE
+}
+
 model Food {
   id         String     @id @default(cuid())
   name       String
@@ -63,6 +82,30 @@ model Goal {
   carbs     Float
   fat       Float
   updatedAt DateTime @updatedAt
+}
+
+// Perfil vigente, single-user: una única fila con id fijo "singleton".
+model Profile {
+  id            String        @id
+  sex           Sex
+  age           Int
+  heightCm      Float
+  activityLevel ActivityLevel
+  goalType      GoalType
+  updatedAt     DateTime      @updatedAt
+}
+
+// Historial de mediciones corporales — una fila por carga, con fecha.
+model BodyMeasurement {
+  id        String   @id @default(cuid())
+  date      DateTime @db.Date
+  weightKg  Float
+  neckCm    Float
+  waistCm   Float
+  hipCm     Float?
+  createdAt DateTime @default(now())
+
+  @@index([date])
 }
 
 model FoodLogEntry {

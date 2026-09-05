@@ -29,6 +29,7 @@ enum MealType {
 model Food {
   id         String     @id @default(cuid())
   name       String
+  brand      String?
   source     FoodSource
   externalId String?
   createdAt  DateTime   @default(now())

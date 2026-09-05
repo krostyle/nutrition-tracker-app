@@ -96,6 +96,51 @@ describe("normalizeOffProduct", () => {
     expect(result?.servingLabel).toBeUndefined();
   });
 
+  it("la porción siempre se expresa en gramos, sin depender del texto libre de la fuente", () => {
+    const result = normalizeOffProduct({
+      product_name: "Barra de cereal",
+      serving_size: "1 barrita (40 g)",
+      serving_quantity: 40,
+      nutriments: {
+        "energy-kcal_100g": 400,
+        proteins_100g: 8,
+        carbohydrates_100g: 65,
+        fat_100g: 12,
+      },
+    });
+
+    expect(result?.servingLabel).toBe("40 g");
+  });
+
+  it("extrae la marca cuando la fuente la reporta", () => {
+    const result = normalizeOffProduct({
+      product_name: "Yogur natural",
+      brands: "Hacendado",
+      nutriments: {
+        "energy-kcal_100g": 61,
+        proteins_100g: 3.5,
+        carbohydrates_100g: 4.7,
+        fat_100g: 3.2,
+      },
+    });
+
+    expect(result?.brand).toBe("Hacendado");
+  });
+
+  it("omite la marca cuando la fuente no la reporta", () => {
+    const result = normalizeOffProduct({
+      product_name: "Yogur natural",
+      nutriments: {
+        "energy-kcal_100g": 61,
+        proteins_100g: 3.5,
+        carbohydrates_100g: 4.7,
+        fat_100g: 3.2,
+      },
+    });
+
+    expect(result?.brand).toBeUndefined();
+  });
+
   it("devuelve null si falta un nutriente obligatorio", () => {
     const result = normalizeOffProduct({
       product_name: "Producto incompleto",

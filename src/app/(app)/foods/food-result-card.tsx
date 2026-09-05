@@ -52,6 +52,9 @@ export function FoodResultCard({
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div className="min-w-0">
             <CardTitle className="truncate text-base">{result.name}</CardTitle>
+            {result.brand && (
+              <p className="truncate text-xs text-muted-foreground">{result.brand}</p>
+            )}
             <MacroRow values={result} />
           </div>
           <Badge variant="secondary" className="shrink-0">
@@ -75,7 +78,9 @@ export function FoodResultCard({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{result.name}</DialogTitle>
-            <DialogDescription>Valores nutricionales</DialogDescription>
+            <DialogDescription>
+              {result.brand ? `${result.brand} · Valores nutricionales` : "Valores nutricionales"}
+            </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4">
             <div>

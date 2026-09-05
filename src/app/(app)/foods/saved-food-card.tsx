@@ -39,6 +39,9 @@ export function SavedFoodCard({ food }: { food: Food }) {
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div className="min-w-0">
             <CardTitle className="truncate text-base">{food.name}</CardTitle>
+            {food.brand && (
+              <p className="truncate text-xs text-muted-foreground">{food.brand}</p>
+            )}
             <MacroRow values={food} />
           </div>
           <Badge variant="secondary" className="shrink-0">
@@ -51,7 +54,9 @@ export function SavedFoodCard({ food }: { food: Food }) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{food.name}</DialogTitle>
-            <DialogDescription>Valores nutricionales</DialogDescription>
+            <DialogDescription>
+              {food.brand ? `${food.brand} · Valores nutricionales` : "Valores nutricionales"}
+            </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4">
             <div>

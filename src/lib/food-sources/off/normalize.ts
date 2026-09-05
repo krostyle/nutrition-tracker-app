@@ -3,6 +3,7 @@ import type { NormalizedNutrients } from "../types";
 export type OffProduct = {
   code?: string;
   product_name?: string;
+  brands?: string;
   nutriments?: Record<string, number | undefined>;
   serving_size?: string;
   serving_quantity?: number;
@@ -42,8 +43,10 @@ export function normalizeOffProduct(product: OffProduct): NormalizedNutrients | 
 
   if (product.serving_quantity !== undefined) {
     result.servingSize = product.serving_quantity;
-    result.servingLabel = product.serving_size ?? `${product.serving_quantity} g`;
+    result.servingLabel = `${product.serving_quantity} g`;
   }
+
+  if (product.brands) result.brand = product.brands.split(",")[0].trim();
 
   return result;
 }

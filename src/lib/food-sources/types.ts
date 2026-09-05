@@ -1,5 +1,6 @@
 export type NormalizedNutrients = {
   name: string;
+  brand?: string;
   calories: number;
   protein: number;
   carbs: number;

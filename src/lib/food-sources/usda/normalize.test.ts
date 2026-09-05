@@ -50,7 +50,7 @@ describe("normalizeUsdaFood", () => {
     });
   });
 
-  it("extrae la porción recomendada usando el texto de porción casera si existe", () => {
+  it("la porción siempre se expresa en gramos, ignorando el texto de porción casera en inglés", () => {
     const result = normalizeUsdaFood({
       description: "Yogurt, plain",
       servingSize: 227,
@@ -65,7 +65,24 @@ describe("normalizeUsdaFood", () => {
     });
 
     expect(result?.servingSize).toBe(227);
-    expect(result?.servingLabel).toBe("1 cup");
+    expect(result?.servingLabel).toBe("227 g");
+  });
+
+  it("trata la unidad ml como equivalente a gramos para la porción", () => {
+    const result = normalizeUsdaFood({
+      description: "Yogurt drink",
+      servingSize: 170,
+      servingSizeUnit: "ml",
+      householdServingFullText: "6 ONZ",
+      foodNutrients: [
+        { nutrientId: 1008, value: 61 },
+        { nutrientId: 1003, value: 3.5 },
+        { nutrientId: 1005, value: 4.7 },
+        { nutrientId: 1004, value: 3.2 },
+      ],
+    });
+
+    expect(result?.servingLabel).toBe("170 g");
   });
 
   it("arma la porción con tamaño y unidad si no hay texto de porción casera", () => {
@@ -98,6 +115,51 @@ describe("normalizeUsdaFood", () => {
 
     expect(result?.servingSize).toBeUndefined();
     expect(result?.servingLabel).toBeUndefined();
+  });
+
+  it("extrae la marca preferiendo brandName sobre brandOwner", () => {
+    const result = normalizeUsdaFood({
+      description: "Yogurt, plain",
+      brandName: "ERIVAN",
+      brandOwner: "Erivan Dairy",
+      foodNutrients: [
+        { nutrientId: 1008, value: 61 },
+        { nutrientId: 1003, value: 3.5 },
+        { nutrientId: 1005, value: 4.7 },
+        { nutrientId: 1004, value: 3.2 },
+      ],
+    });
+
+    expect(result?.brand).toBe("ERIVAN");
+  });
+
+  it("usa brandOwner cuando no hay brandName", () => {
+    const result = normalizeUsdaFood({
+      description: "Yogurt, plain",
+      brandOwner: "Agri-Service LLC",
+      foodNutrients: [
+        { nutrientId: 1008, value: 61 },
+        { nutrientId: 1003, value: 3.5 },
+        { nutrientId: 1005, value: 4.7 },
+        { nutrientId: 1004, value: 3.2 },
+      ],
+    });
+
+    expect(result?.brand).toBe("Agri-Service LLC");
+  });
+
+  it("omite la marca cuando la fuente no la reporta", () => {
+    const result = normalizeUsdaFood({
+      description: "Bananas, raw",
+      foodNutrients: [
+        { nutrientId: 1008, value: 89 },
+        { nutrientId: 1003, value: 1.09 },
+        { nutrientId: 1005, value: 22.8 },
+        { nutrientId: 1004, value: 0.33 },
+      ],
+    });
+
+    expect(result?.brand).toBeUndefined();
   });
 
   it("devuelve null si falta un nutriente obligatorio", () => {

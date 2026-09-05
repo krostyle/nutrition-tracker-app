@@ -12,6 +12,8 @@ export type UsdaFood = {
   servingSize?: number;
   servingSizeUnit?: string;
   householdServingFullText?: string;
+  brandName?: string;
+  brandOwner?: string;
 };
 
 export type { NormalizedNutrients };
@@ -64,10 +66,11 @@ export function normalizeUsdaFood(food: UsdaFood): NormalizedNutrients | null {
 
   if (food.servingSize !== undefined) {
     result.servingSize = food.servingSize;
-    result.servingLabel =
-      food.householdServingFullText ??
-      `${food.servingSize} ${food.servingSizeUnit ?? "g"}`;
+    result.servingLabel = `${food.servingSize} g`;
   }
+
+  const brand = food.brandName ?? food.brandOwner;
+  if (brand) result.brand = brand;
 
   return result;
 }

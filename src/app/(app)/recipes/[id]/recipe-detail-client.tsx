@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { deleteRecipeAction, getRecipeDetailAction, type RecipeDetail } from "@/lib/nutrition/recipe-actions";
 
 const NUTRIENT_LABELS = [
@@ -41,7 +42,24 @@ export function RecipeDetailClient({ id }: { id: string }) {
   }
 
   if (detail === undefined) {
-    return <p className="text-sm text-muted-foreground">Cargando...</p>;
+    return (
+      <Card className="w-full max-w-lg">
+        <CardHeader>
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="mt-1 h-4 w-24" />
+        </CardHeader>
+        <CardContent className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   if (detail === null) {

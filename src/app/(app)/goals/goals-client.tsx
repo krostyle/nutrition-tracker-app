@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getGoalAction, saveGoalAction } from "@/lib/nutrition/actions";
 
 const FIELDS = [
@@ -22,12 +23,12 @@ const FIELDS = [
 
 export function GoalsClient() {
   const [values, setValues] = useState<Record<string, string>>({});
+  const [loaded, setLoaded] = useState(false);
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    startTransition(async () => {
-      const goal = await getGoalAction();
+    getGoalAction().then((goal) => {
       if (goal) {
         setValues({
           calories: String(goal.calories),
@@ -36,6 +37,7 @@ export function GoalsClient() {
           fat: String(goal.fat),
         });
       }
+      setLoaded(true);
     });
   }, []);
 
@@ -54,6 +56,26 @@ export function GoalsClient() {
       });
       setSaved(true);
     });
+  }
+
+  if (!loaded) {
+    return (
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="mt-1 h-4 w-48" />
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {FIELDS.map((field) => (
+            <div key={field.key} className="flex flex-col gap-1.5">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-8 w-full" />
+            </div>
+          ))}
+          <Skeleton className="h-8 w-full" />
+        </CardContent>
+      </Card>
+    );
   }
 
   return (

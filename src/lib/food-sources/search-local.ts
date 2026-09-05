@@ -8,6 +8,6 @@ export async function searchLocalFoods(query: string): Promise<Food[]> {
   return prisma.food.findMany({
     where: { name: { contains: trimmed, mode: "insensitive" } },
     orderBy: { name: "asc" },
-    take: 20,
+    take: 10,
   });
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Card,
   CardContent,
@@ -68,7 +69,8 @@ function BarcodeTab() {
         </p>
       )}
 
-      {result && (
+      {pending && <FoodCardSkeleton />}
+      {!pending && result && (
         <FoodResultCard result={result} source="OFF" onSave={() => saveOffFoodAction(result)} />
       )}
     </div>
@@ -114,6 +116,31 @@ function MergedSearchResults({ results }: { results: SearchFoodsResult }) {
           />
         ))
       )}
+    </div>
+  );
+}
+
+function FoodCardSkeleton() {
+  return (
+    <div className="rounded-xl border p-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-3 w-1/2" />
+        </div>
+        <Skeleton className="h-5 w-12 shrink-0" />
+      </div>
+      <Skeleton className="mt-3 h-7 w-20" />
+    </div>
+  );
+}
+
+function SearchResultsSkeleton() {
+  return (
+    <div className="flex flex-col gap-3">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <FoodCardSkeleton key={i} />
+      ))}
     </div>
   );
 }
@@ -173,7 +200,8 @@ function SearchTab() {
         <p className="text-sm text-muted-foreground">Escribí al menos 3 caracteres.</p>
       )}
 
-      {!tooShort && results && <MergedSearchResults results={results} />}
+      {!tooShort && pending && <SearchResultsSkeleton />}
+      {!tooShort && !pending && results && <MergedSearchResults results={results} />}
     </div>
   );
 }

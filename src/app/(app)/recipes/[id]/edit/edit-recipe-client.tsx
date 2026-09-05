@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getRecipeDetailAction, updateRecipeAction } from "@/lib/nutrition/recipe-actions";
 import { RecipeForm, type RecipeFormInitial } from "../../recipe-form";
 
@@ -29,7 +30,18 @@ export function EditRecipeClient({ id }: { id: string }) {
   }, [id]);
 
   if (initial === undefined) {
-    return <p className="text-sm text-muted-foreground">Cargando...</p>;
+    return (
+      <Card className="w-full max-w-lg">
+        <CardHeader>
+          <Skeleton className="h-6 w-32" />
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </CardContent>
+      </Card>
+    );
   }
 
   if (initial === null) {

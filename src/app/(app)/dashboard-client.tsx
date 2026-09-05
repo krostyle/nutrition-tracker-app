@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   createLogEntryAction,
   deleteLogEntryAction,
@@ -195,7 +196,7 @@ function AddEntryForm({
       </div>
 
       {!selected && results.length > 0 && (
-        <div className="flex flex-col rounded-lg border">
+        <div className="flex max-h-60 flex-col overflow-y-auto rounded-lg border">
           {results.map((food) => (
             <button
               type="button"
@@ -231,6 +232,43 @@ function AddEntryForm({
   );
 }
 
+function DashboardSkeleton() {
+  return (
+    <div className="flex w-full max-w-2xl flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-7 w-24" />
+        <Skeleton className="h-5 w-24" />
+        <Skeleton className="h-7 w-24" />
+      </div>
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-5 w-32" />
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex flex-col gap-1.5">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-4 w-12" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Card key={i}>
+          <CardHeader>
+            <Skeleton className="h-5 w-24" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-4 w-32" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 export function DashboardClient() {
   const [dateKey, setDateKey] = useState(todayDateKey());
   const [summary, setSummary] = useState<DaySummary | null>(null);
@@ -247,6 +285,10 @@ export function DashboardClient() {
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateKey]);
+
+  if (!summary) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <div className="flex w-full max-w-2xl flex-col gap-6">

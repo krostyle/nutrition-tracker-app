@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { listRecipesAction } from "@/lib/nutrition/recipe-actions";
 import type { Recipe } from "@/generated/prisma/client";
 
@@ -24,7 +25,11 @@ export function RecipesClient() {
       </CardHeader>
       <CardContent>
         {recipes === null ? (
-          <p className="text-sm text-muted-foreground">Cargando...</p>
+          <div className="flex flex-col gap-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
         ) : recipes.length === 0 ? (
           <p className="text-sm text-muted-foreground">Todavía no creaste recetas.</p>
         ) : (

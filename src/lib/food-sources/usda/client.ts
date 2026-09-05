@@ -11,7 +11,7 @@ export async function searchUsdaFoods(query: string): Promise<UsdaFood[]> {
   const url = new URL(`${USDA_BASE_URL}/foods/search`);
   url.searchParams.set("api_key", apiKey);
   url.searchParams.set("query", query);
-  url.searchParams.set("pageSize", "20");
+  url.searchParams.set("pageSize", "10");
 
   const res = await fetch(url);
   if (!res.ok) {

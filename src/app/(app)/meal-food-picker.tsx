@@ -21,7 +21,7 @@ import {
 import type { ManualFoodInput } from "@/lib/food-sources/persist";
 import { addFoodToMealAction, searchLocalFoodsAction } from "@/lib/nutrition/actions";
 import type { Food, MealType } from "@/generated/prisma/client";
-import { MacroRow, type NutrientValues } from "./foods/nutrition-facts";
+import { MacroRow, NutritionFacts, scaleToServing, type NutrientValues } from "./foods/nutrition-facts";
 
 const MIN_QUERY_LENGTH = 3;
 const SEARCH_DEBOUNCE_MS = 800;
@@ -39,13 +39,33 @@ function candidateValues(candidate: Candidate): NutrientValues {
   return candidate.kind === "existing" ? candidate.food : candidate.result;
 }
 
+function candidateBrand(candidate: Candidate): string | undefined {
+  return (candidate.kind === "existing" ? candidate.food.brand : candidate.result.brand) ?? undefined;
+}
+
+function candidateServingSize(candidate: Candidate): number | undefined {
+  return (
+    (candidate.kind === "existing" ? candidate.food.servingSize : candidate.result.servingSize) ??
+    undefined
+  );
+}
+
+function candidateServingLabel(candidate: Candidate): string | undefined {
+  return (
+    (candidate.kind === "existing" ? candidate.food.servingLabel : candidate.result.servingLabel) ??
+    undefined
+  );
+}
+
 function ResultRow({
   name,
+  brand,
   values,
   badge,
   onSelect,
 }: {
   name: string;
+  brand?: string;
   values: NutrientValues;
   badge?: string;
   onSelect: () => void;
@@ -60,6 +80,7 @@ function ResultRow({
         <span className="min-w-0 flex-1 truncate font-medium">{name}</span>
         {badge && <span className="shrink-0 text-xs text-muted-foreground">{badge}</span>}
       </div>
+      {brand && <p className="truncate text-xs text-muted-foreground">{brand}</p>}
       <MacroRow values={values} />
     </button>
   );
@@ -75,13 +96,32 @@ function ConfirmGramsFooter({
   onConfirm: (grams: number) => void;
 }) {
   const [grams, setGrams] = useState("100");
+  const values = candidateValues(candidate);
+  const brand = candidateBrand(candidate);
+  const servingSize = candidateServingSize(candidate);
+  const servingLabel = candidateServingLabel(candidate);
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border p-2">
+    <div className="flex flex-col gap-3 rounded-lg border p-3">
       <div className="min-w-0">
         <p className="truncate text-sm font-medium">{candidateName(candidate)}</p>
-        <MacroRow values={candidateValues(candidate)} />
+        {brand && <p className="truncate text-xs text-muted-foreground">{brand}</p>}
       </div>
+
+      <div>
+        <h4 className="mb-1 text-xs font-medium text-muted-foreground">Por 100g</h4>
+        <NutritionFacts values={values} />
+      </div>
+
+      {servingSize !== undefined && (
+        <div>
+          <h4 className="mb-1 text-xs font-medium text-muted-foreground">
+            Por porción {servingLabel ? `(${servingLabel})` : ""}
+          </h4>
+          <NutritionFacts values={scaleToServing(values, servingSize)} />
+        </div>
+      )}
+
       <div className="flex items-center gap-2">
         <Input
           className="w-20"
@@ -139,6 +179,7 @@ function SavedFoodsPickerTab({ onSelect }: { onSelect: (c: Candidate) => void })
             <ResultRow
               key={food.id}
               name={food.name}
+              brand={food.brand ?? undefined}
               values={food}
               onSelect={() => onSelect({ kind: "existing", foodId: food.id, food })}
             />
@@ -219,6 +260,7 @@ function SearchByNamePickerTab({ onSelect }: { onSelect: (c: Candidate) => void 
               <ResultRow
                 key={`${source}-${result.externalId}`}
                 name={result.name}
+                brand={result.brand}
                 values={result}
                 badge={source}
                 onSelect={() => onSelect({ kind: source, result })}
@@ -273,6 +315,7 @@ function BarcodePickerTab({ onSelect }: { onSelect: (c: Candidate) => void }) {
         <div className="rounded-lg border">
           <ResultRow
             name={result.name}
+            brand={result.brand}
             values={result}
             badge="OFF"
             onSelect={() => onSelect({ kind: "OFF", result })}

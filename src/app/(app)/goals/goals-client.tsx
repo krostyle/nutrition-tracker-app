@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { Ruler, Target, UserRound } from "lucide-react";
+import { Flag, Ruler, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -164,7 +164,7 @@ function RecommendationPanel({ onApplied }: { onApplied: () => void }) {
   if (result.status === "missing_profile") {
     return (
       <p className="text-sm text-muted-foreground">
-        Completá la pestaña &quot;Objetivos&quot; para ver una recomendación.
+        Completá la pestaña &quot;Objetivo&quot; para ver una recomendación.
       </p>
     );
   }
@@ -172,7 +172,7 @@ function RecommendationPanel({ onApplied }: { onApplied: () => void }) {
   if (result.status === "missing_measurement") {
     return (
       <p className="text-sm text-muted-foreground">
-        Cargá al menos una medición en &quot;Medidas&quot; para ver una recomendación.
+        Cargá al menos una medición en &quot;Progreso&quot; para ver una recomendación.
       </p>
     );
   }
@@ -265,10 +265,22 @@ const GOAL_TYPE_LABELS: Record<GoalType, string> = {
   GAIN_MUSCLE: "Subir músculo",
 };
 
-function ObjectivesTab({
+const ACTIVITY_SHORT_LABELS: Record<ActivityLevel, string> = {
+  SEDENTARY: "Sedentario",
+  LIGHT: "Liviano",
+  MODERATE: "Actividad moderada",
+  ACTIVE: "Activo",
+  VERY_ACTIVE: "Muy activo",
+};
+
+function EditProfileDialog({
+  open,
+  onOpenChange,
   profile,
   onSaved,
 }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   profile: Profile | null;
   onSaved: () => void;
 }) {
@@ -278,12 +290,11 @@ function ObjectivesTab({
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>(
     profile?.activityLevel ?? "MODERATE",
   );
-  const [goalType, setGoalType] = useState<GoalType>(profile?.goalType ?? "MAINTAIN");
   const [pending, startTransition] = useTransition();
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = age.trim() !== "" && heightCm.trim() !== "" && Number(age) > 0 && Number(heightCm) > 0;
+  const canSubmit =
+    age.trim() !== "" && heightCm.trim() !== "" && Number(age) > 0 && Number(heightCm) > 0;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -295,7 +306,122 @@ function ObjectivesTab({
         age: Number(age),
         heightCm: Number(heightCm),
         activityLevel,
+        goalType: profile?.goalType ?? "MAINTAIN",
+        targetWeightKg: profile?.targetWeightKg ?? null,
+      });
+      if (outcome.ok) {
+        onSaved();
+        onOpenChange(false);
+      } else {
+        setError(outcome.message);
+      }
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Editar mis datos</DialogTitle>
+          <DialogDescription>Se usan para calcular tu recomendación.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <div className="flex flex-col gap-1.5">
+            <Label>Sexo biológico</Label>
+            <Select items={SEX_LABELS} value={sex} onValueChange={(v) => setSex(v as Sex)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(SEX_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="profile-age">Edad</Label>
+            <Input
+              id="profile-age"
+              type="number"
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="profile-height">Estatura (cm)</Label>
+            <Input
+              id="profile-height"
+              type="number"
+              step="any"
+              value={heightCm}
+              onChange={(e) => setHeightCm(e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label>Nivel de actividad</Label>
+            <Select
+              items={ACTIVITY_LABELS}
+              value={activityLevel}
+              onValueChange={(v) => setActivityLevel(v as ActivityLevel)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(ACTIVITY_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button type="submit" disabled={!canSubmit || pending}>
+            {pending ? "Guardando..." : "Guardar"}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ObjectiveTab({
+  profile,
+  onSaved,
+}: {
+  profile: Profile | null;
+  onSaved: () => void;
+}) {
+  const [goalType, setGoalType] = useState<GoalType>(profile?.goalType ?? "MAINTAIN");
+  const [targetWeightKg, setTargetWeightKg] = useState(
+    profile?.targetWeightKg != null ? String(profile.targetWeightKg) : "",
+  );
+  const [pending, startTransition] = useTransition();
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editKey, setEditKey] = useState(0);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!profile) return;
+    setError(null);
+    startTransition(async () => {
+      const outcome = await saveProfileAction({
+        sex: profile.sex,
+        age: profile.age,
+        heightCm: profile.heightCm,
+        activityLevel: profile.activityLevel,
         goalType,
+        targetWeightKg: targetWeightKg.trim() ? Number(targetWeightKg) : null,
       });
       if (outcome.ok) {
         setSaved(true);
@@ -307,108 +433,88 @@ function ObjectivesTab({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      <div className="flex flex-col gap-1.5">
-        <Label>Sexo biológico</Label>
-        <Select
-          items={SEX_LABELS}
-          value={sex}
-          onValueChange={(v) => {
-            setSex(v as Sex);
-            setSaved(false);
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm">
+        {profile ? (
+          <span className="text-muted-foreground">
+            {SEX_LABELS[profile.sex]} · {profile.age} años · {profile.heightCm} cm ·{" "}
+            {ACTIVITY_SHORT_LABELS[profile.activityLevel]}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">Todavía no cargaste tus datos.</span>
+        )}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            setEditKey((k) => k + 1);
+            setEditOpen(true);
           }}
         >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(SEX_LABELS).map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          Editar mis datos
+        </Button>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="profile-age">Edad</Label>
-        <Input
-          id="profile-age"
-          type="number"
-          value={age}
-          onChange={(e) => {
-            setAge(e.target.value);
-            setSaved(false);
-          }}
-        />
-      </div>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        {!profile && (
+          <p className="text-sm text-muted-foreground">
+            Completá primero tus datos para poder definir un objetivo.
+          </p>
+        )}
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="profile-height">Estatura (cm)</Label>
-        <Input
-          id="profile-height"
-          type="number"
-          step="any"
-          value={heightCm}
-          onChange={(e) => {
-            setHeightCm(e.target.value);
-            setSaved(false);
-          }}
-        />
-      </div>
+        <div className="flex flex-col gap-1.5">
+          <Label>Objetivo</Label>
+          <Select
+            items={GOAL_TYPE_LABELS}
+            value={goalType}
+            onValueChange={(v) => {
+              setGoalType(v as GoalType);
+              setSaved(false);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(GOAL_TYPE_LABELS).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label>Nivel de actividad</Label>
-        <Select
-          items={ACTIVITY_LABELS}
-          value={activityLevel}
-          onValueChange={(v) => {
-            setActivityLevel(v as ActivityLevel);
-            setSaved(false);
-          }}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(ACTIVITY_LABELS).map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="target-weight">
+            Peso objetivo (kg) <span className="text-muted-foreground">(opcional)</span>
+          </Label>
+          <Input
+            id="target-weight"
+            type="number"
+            step="any"
+            value={targetWeightKg}
+            onChange={(e) => {
+              setTargetWeightKg(e.target.value);
+              setSaved(false);
+            }}
+          />
+        </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label>Objetivo</Label>
-        <Select
-          items={GOAL_TYPE_LABELS}
-          value={goalType}
-          onValueChange={(v) => {
-            setGoalType(v as GoalType);
-            setSaved(false);
-          }}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(GOAL_TYPE_LABELS).map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+        <Button type="submit" disabled={!profile || pending}>
+          {pending ? "Guardando..." : saved ? "Guardado" : "Guardar"}
+        </Button>
+      </form>
 
-      <Button type="submit" disabled={!canSubmit || pending}>
-        {pending ? "Guardando..." : saved ? "Guardado" : "Guardar"}
-      </Button>
-    </form>
+      <EditProfileDialog
+        key={editKey}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        profile={profile}
+        onSaved={onSaved}
+      />
+    </div>
   );
 }
 
@@ -546,8 +652,30 @@ function MeasurementsTab({
     setDialogOpen(false);
   }
 
+  const currentWeight = history?.[0]?.weightKg;
+  const targetWeight = profile?.targetWeightKg ?? undefined;
+  const showProgress = currentWeight != null && targetWeight != null;
+  const diff = showProgress ? round(currentWeight - targetWeight) : 0;
+
   return (
     <div className="flex flex-col gap-4">
+      {showProgress && (
+        <div className="rounded-lg border px-3 py-2 text-sm">
+          <div className="flex items-center gap-2 font-medium">
+            <span>{currentWeight} kg</span>
+            <span className="text-muted-foreground">→</span>
+            <span>{targetWeight} kg</span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {diff > 0
+              ? `Faltan ${Math.abs(diff)} kg para bajar`
+              : diff < 0
+                ? `Faltan ${Math.abs(diff)} kg para subir`
+                : "¡Llegaste a tu peso objetivo!"}
+          </p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium">Historial</h3>
         <Button size="sm" onClick={() => setDialogOpen(true)}>
@@ -612,26 +740,27 @@ export function GoalsClient() {
       <CardHeader>
         <CardTitle>Metas</CardTitle>
         <CardDescription>
-          Definí tu perfil y tus medidas para recibir una recomendación de calorías y macros.
+          Definí tu objetivo y registrá tu progreso para recibir una recomendación de calorías y
+          macros.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="meta">
           <div className="hidden sm:block">
             <TabsList className="w-full">
-              <TabsTrigger value="meta">Meta</TabsTrigger>
-              <TabsTrigger value="objetivos">Objetivos</TabsTrigger>
-              <TabsTrigger value="medidas">Medidas</TabsTrigger>
+              <TabsTrigger value="meta">Meta diaria</TabsTrigger>
+              <TabsTrigger value="objetivo">Objetivo</TabsTrigger>
+              <TabsTrigger value="progreso">Progreso</TabsTrigger>
             </TabsList>
           </div>
 
           <TabsContent value="meta" className="pb-28 sm:pb-0">
             <MetaTab refreshKey={refreshKey} />
           </TabsContent>
-          <TabsContent value="objetivos" className="pb-28 sm:pb-0">
-            {profileLoaded && <ObjectivesTab profile={profile} onSaved={handleChanged} />}
+          <TabsContent value="objetivo" className="pb-28 sm:pb-0">
+            {profileLoaded && <ObjectiveTab profile={profile} onSaved={handleChanged} />}
           </TabsContent>
-          <TabsContent value="medidas" className="pb-28 sm:pb-0">
+          <TabsContent value="progreso" className="pb-28 sm:pb-0">
             <MeasurementsTab profile={profile} onSaved={handleChanged} />
           </TabsContent>
 
@@ -644,15 +773,15 @@ export function GoalsClient() {
             >
               <TabsTrigger value="meta" className={floatingTabTriggerClass}>
                 <TabIconBadge tint="emerald" icon={Target} />
-                <span className={floatingTabLabelClass}>Meta</span>
+                <span className={floatingTabLabelClass}>Meta diaria</span>
               </TabsTrigger>
-              <TabsTrigger value="objetivos" className={floatingTabTriggerClass}>
-                <TabIconBadge tint="blue" icon={UserRound} />
-                <span className={floatingTabLabelClass}>Objetivos</span>
+              <TabsTrigger value="objetivo" className={floatingTabTriggerClass}>
+                <TabIconBadge tint="blue" icon={Flag} />
+                <span className={floatingTabLabelClass}>Objetivo</span>
               </TabsTrigger>
-              <TabsTrigger value="medidas" className={floatingTabTriggerClass}>
+              <TabsTrigger value="progreso" className={floatingTabTriggerClass}>
                 <TabIconBadge tint="violet" icon={Ruler} />
-                <span className={floatingTabLabelClass}>Medidas</span>
+                <span className={floatingTabLabelClass}>Progreso</span>
               </TabsTrigger>
             </TabsList>
           </div>

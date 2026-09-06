@@ -13,6 +13,7 @@ export type ProfileInput = {
   heightCm: number;
   activityLevel: ActivityLevel;
   goalType: GoalType;
+  targetWeightKg: number | null;
 };
 
 export async function saveProfile(input: ProfileInput): Promise<Profile> {

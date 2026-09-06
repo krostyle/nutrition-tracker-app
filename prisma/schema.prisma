@@ -86,13 +86,14 @@ model Goal {
 
 // Perfil vigente, single-user: una única fila con id fijo "singleton".
 model Profile {
-  id            String        @id
-  sex           Sex
-  age           Int
-  heightCm      Float
-  activityLevel ActivityLevel
-  goalType      GoalType
-  updatedAt     DateTime      @updatedAt
+  id             String        @id
+  sex            Sex
+  age            Int
+  heightCm       Float
+  activityLevel  ActivityLevel
+  goalType       GoalType
+  targetWeightKg Float?
+  updatedAt      DateTime      @updatedAt
 }
 
 // Historial de mediciones corporales — una fila por carga, con fecha.

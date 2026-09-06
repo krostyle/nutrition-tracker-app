@@ -1,4 +1,4 @@
-const DEFAULT_MESSAGE = "Ocurrió un error. Probá de nuevo.";
+const DEFAULT_MESSAGE = "Ocurrió un error. Prueba de nuevo.";
 
 export type ActionResult<T> = { ok: true; data: T } | { ok: false; message: string };
 

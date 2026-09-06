@@ -80,7 +80,7 @@ function BarcodeTab() {
 
       {notFound && (
         <p className="text-sm text-muted-foreground">
-          No se encontró en Open Food Facts. Podés cargarlo en la pestaña
+          No se encontró en Open Food Facts. Puedes cargarlo en la pestaña
           &quot;Manual&quot;.
         </p>
       )}
@@ -214,7 +214,7 @@ function SearchTab() {
       </form>
 
       {tooShort && (
-        <p className="text-sm text-muted-foreground">Escribí al menos 3 caracteres.</p>
+        <p className="text-sm text-muted-foreground">Escribe al menos 3 caracteres.</p>
       )}
 
       {!tooShort && pending && <SearchResultsSkeleton />}

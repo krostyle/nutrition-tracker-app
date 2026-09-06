@@ -37,7 +37,7 @@ export async function getRecipeDetailAction(id: string): Promise<RecipeDetail | 
   return { recipe, calculation };
 }
 
-const RECIPE_SAVE_ERROR = "No pudimos guardar la receta. Probá de nuevo.";
+const RECIPE_SAVE_ERROR = "No pudimos guardar la receta. Prueba de nuevo.";
 
 export async function createRecipeAction(
   input: RecipeInput,
@@ -53,5 +53,5 @@ export async function updateRecipeAction(
 }
 
 export async function deleteRecipeAction(id: string): Promise<ActionResult<void>> {
-  return runAction(() => deleteRecipe(id), "No pudimos eliminar la receta. Probá de nuevo.");
+  return runAction(() => deleteRecipe(id), "No pudimos eliminar la receta. Prueba de nuevo.");
 }

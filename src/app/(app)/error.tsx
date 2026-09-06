@@ -28,7 +28,7 @@ export default function AppError({
         <CardHeader>
           <CardTitle>Algo salió mal</CardTitle>
           <CardDescription>
-            Ocurrió un error inesperado. Podés intentar de nuevo.
+            Ocurrió un error inesperado. Puedes intentar de nuevo.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">

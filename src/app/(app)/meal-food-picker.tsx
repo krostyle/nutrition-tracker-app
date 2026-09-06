@@ -264,7 +264,7 @@ function SearchByNamePickerTab({ onSelect }: { onSelect: (c: Candidate) => void 
         onChange={(e) => handleChange(e.target.value)}
       />
       {tooShort && (
-        <p className="text-sm text-muted-foreground">Escribí al menos 3 caracteres.</p>
+        <p className="text-sm text-muted-foreground">Escribe al menos 3 caracteres.</p>
       )}
       {!tooShort && notes.map((note) => (
         <p key={note} className="text-sm text-muted-foreground">
@@ -334,7 +334,7 @@ function BarcodePickerTab({ onSelect }: { onSelect: (c: Candidate) => void }) {
       </form>
       {notFound && (
         <p className="text-sm text-muted-foreground">
-          No se encontró en Open Food Facts. Podés cargarlo en la pestaña &quot;Manual&quot;.
+          No se encontró en Open Food Facts. Puedes cargarlo en la pestaña &quot;Manual&quot;.
         </p>
       )}
       {error && <p className="text-sm text-destructive">{error}</p>}
@@ -542,7 +542,7 @@ export function MealFoodPicker({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Agregar a {mealLabel}</DialogTitle>
-          <DialogDescription>Buscá un alimento o cargalo a mano.</DialogDescription>
+          <DialogDescription>Busca un alimento o cárgalo a mano.</DialogDescription>
         </DialogHeader>
 
         {error && <p className="text-sm text-destructive">{error}</p>}

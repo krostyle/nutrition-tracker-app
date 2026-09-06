@@ -14,7 +14,7 @@ export default function NotFound() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Página no encontrada</CardTitle>
-          <CardDescription>La página que buscás no existe.</CardDescription>
+          <CardDescription>La página que buscas no existe.</CardDescription>
         </CardHeader>
         <CardContent>
           <Button render={<Link href="/" />} nativeButton={false} className="w-full">

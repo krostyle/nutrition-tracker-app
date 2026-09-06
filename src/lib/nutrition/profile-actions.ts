@@ -12,7 +12,7 @@ export async function getProfileAction(): Promise<Profile | null> {
 }
 
 export async function saveProfileAction(input: ProfileInput): Promise<ActionResult<Profile>> {
-  return runAction(() => saveProfile(input), "No pudimos guardar los objetivos. Probá de nuevo.");
+  return runAction(() => saveProfile(input), "No pudimos guardar los objetivos. Prueba de nuevo.");
 }
 
 export type CreateMeasurementActionInput = {
@@ -33,7 +33,7 @@ export async function createMeasurementAction(
     waistCm: input.waistCm,
     hipCm: input.hipCm,
   };
-  return runAction(() => createMeasurement(data), "No pudimos guardar la medición. Probá de nuevo.");
+  return runAction(() => createMeasurement(data), "No pudimos guardar la medición. Prueba de nuevo.");
 }
 
 export async function listMeasurementsAction(): Promise<BodyMeasurement[]> {
@@ -69,5 +69,5 @@ export async function getRecommendationAction(): Promise<RecommendationResult> {
 export async function applyRecommendationAsGoalAction(
   input: GoalInput,
 ): Promise<ActionResult<Goal>> {
-  return runAction(() => saveGoal(input), "No pudimos aplicar la recomendación. Probá de nuevo.");
+  return runAction(() => saveGoal(input), "No pudimos aplicar la recomendación. Prueba de nuevo.");
 }

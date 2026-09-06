@@ -71,7 +71,7 @@ export async function getGoalAction(): Promise<Goal | null> {
 }
 
 export async function saveGoalAction(input: GoalInput): Promise<ActionResult<Goal>> {
-  return runAction(() => saveGoal(input), "No pudimos guardar la meta. Probá de nuevo.");
+  return runAction(() => saveGoal(input), "No pudimos guardar la meta. Prueba de nuevo.");
 }
 
 export type CreateEntryActionInput = {
@@ -82,7 +82,7 @@ export type CreateEntryActionInput = {
   dateKey: string;
 };
 
-const LOG_ENTRY_ERROR = "No pudimos guardar el registro. Probá de nuevo.";
+const LOG_ENTRY_ERROR = "No pudimos guardar el registro. Prueba de nuevo.";
 
 export async function createLogEntryAction(
   input: CreateEntryActionInput,
@@ -108,7 +108,7 @@ export async function updateLogEntryQuantityAction(
 }
 
 export async function deleteLogEntryAction(id: string): Promise<ActionResult<void>> {
-  return runAction(() => deleteLogEntry(id), "No pudimos eliminar el registro. Probá de nuevo.");
+  return runAction(() => deleteLogEntry(id), "No pudimos eliminar el registro. Prueba de nuevo.");
 }
 
 export async function searchLocalFoodsAction(query: string): Promise<Food[]> {

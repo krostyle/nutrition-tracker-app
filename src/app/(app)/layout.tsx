@@ -21,7 +21,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <Card className="w-full max-w-sm">
             <CardHeader>
               <CardTitle>Nutrition Tracker</CardTitle>
-              <CardDescription>Iniciá sesión para continuar.</CardDescription>
+              <CardDescription>Inicia sesión para continuar.</CardDescription>
             </CardHeader>
             <CardContent>
               <Button render={<Link href="/sign-in" />} nativeButton={false} className="w-full">

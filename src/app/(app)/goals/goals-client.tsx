@@ -164,7 +164,7 @@ function RecommendationPanel({ onApplied }: { onApplied: () => void }) {
   if (result.status === "missing_profile") {
     return (
       <p className="text-sm text-muted-foreground">
-        Completá la pestaña &quot;Objetivo&quot; para ver una recomendación.
+        Completa la pestaña &quot;Objetivo&quot; para ver una recomendación.
       </p>
     );
   }
@@ -172,7 +172,7 @@ function RecommendationPanel({ onApplied }: { onApplied: () => void }) {
   if (result.status === "missing_measurement") {
     return (
       <p className="text-sm text-muted-foreground">
-        Cargá al menos una medición en &quot;Progreso&quot; para ver una recomendación.
+        Carga al menos una medición en &quot;Progreso&quot; para ver una recomendación.
       </p>
     );
   }
@@ -459,7 +459,7 @@ function ObjectiveTab({
         {error && <p className="text-sm text-destructive">{error}</p>}
         {!profile && (
           <p className="text-sm text-muted-foreground">
-            Completá primero tus datos para poder definir un objetivo.
+            Completa primero tus datos para poder definir un objetivo.
           </p>
         )}
 
@@ -740,7 +740,7 @@ export function GoalsClient() {
       <CardHeader>
         <CardTitle>Metas</CardTitle>
         <CardDescription>
-          Definí tu objetivo y registrá tu progreso para recibir una recomendación de calorías y
+          Define tu objetivo y registra tu progreso para recibir una recomendación de calorías y
           macros.
         </CardDescription>
       </CardHeader>

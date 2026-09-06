@@ -25,7 +25,7 @@ export async function lookupBarcodeAction(barcode: string): Promise<BarcodeLooku
     console.error(error);
     return {
       status: "error",
-      message: "No pudimos consultar Open Food Facts ahora. Probá de nuevo en un momento.",
+      message: "No pudimos consultar Open Food Facts ahora. Prueba de nuevo en un momento.",
     };
   }
 
@@ -80,7 +80,7 @@ export async function searchFoodsAction(query: string): Promise<SearchFoodsResul
   return { off: offResult, usda: usdaResult };
 }
 
-const SAVE_FOOD_ERROR = "No pudimos guardar el alimento. Probá de nuevo.";
+const SAVE_FOOD_ERROR = "No pudimos guardar el alimento. Prueba de nuevo.";
 
 export async function saveOffFoodAction(result: ExternalFoodResult): Promise<ActionResult<Food>> {
   const { externalId, ...nutrients } = result;

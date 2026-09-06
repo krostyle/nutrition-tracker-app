@@ -6,12 +6,13 @@ import type { ExternalFoodResult } from "@/lib/food-sources/actions";
 import { createManualFood, persistExternalFood, type ManualFoodInput } from "@/lib/food-sources/persist";
 import { searchLocalFoods } from "@/lib/food-sources/search-local";
 import { aggregateNutrients, type AggregatedNutrients, type WeightedNutrients } from "./aggregate";
-import { parseDateKey } from "./date";
+import { getWeekDates, parseDateKey } from "./date";
 import { getGoal, saveGoal, type GoalInput } from "./goal";
 import {
   createLogEntry,
   deleteLogEntry,
   listLogEntriesForDate,
+  listLogEntriesForDateRange,
   updateLogEntryQuantity,
   type FoodLogEntryWithDetails,
 } from "./log-entries";
@@ -64,6 +65,55 @@ export async function getDaySummaryAction(dateKey: string): Promise<DaySummary> 
   ) as Record<MealType, LogEntryDisplay[]>;
 
   return { goal, totals, entriesByMeal };
+}
+
+export type WeekDaySummary = {
+  dateKey: string;
+  totals: AggregatedNutrients;
+  hasEntries: boolean;
+};
+
+export type WeekSummary = {
+  goal: Goal | null;
+  days: WeekDaySummary[];
+  average: AggregatedNutrients | null;
+};
+
+export async function getWeekSummaryAction(weekStartKey: string): Promise<WeekSummary> {
+  const weekDates = getWeekDates(weekStartKey);
+  const startDate = parseDateKey(weekDates[0]);
+  const endDate = parseDateKey(weekDates[6]);
+
+  const [entries, goal] = await Promise.all([
+    listLogEntriesForDateRange(startDate, endDate),
+    getGoal(),
+  ]);
+
+  const entriesByDate = new Map<string, FoodLogEntryWithDetails[]>();
+  for (const dateKey of weekDates) entriesByDate.set(dateKey, []);
+  for (const entry of entries) {
+    const key = entry.date.toISOString().slice(0, 10);
+    entriesByDate.get(key)?.push(entry);
+  }
+
+  const days: WeekDaySummary[] = weekDates.map((dateKey) => {
+    const dayEntries = entriesByDate.get(dateKey) ?? [];
+    const totals = aggregateNutrients(dayEntries.map(entryContribution));
+    return { dateKey, totals, hasEntries: dayEntries.length > 0 };
+  });
+
+  const daysWithEntries = days.filter((d) => d.hasEntries);
+  const average =
+    daysWithEntries.length > 0
+      ? aggregateNutrients(
+          daysWithEntries.map((d) => ({
+            nutrients: d.totals,
+            factor: 1 / daysWithEntries.length,
+          })),
+        )
+      : null;
+
+  return { goal, days, average };
 }
 
 export async function getGoalAction(): Promise<Goal | null> {

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,11 +17,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   deleteLogEntryAction,
   getDaySummaryAction,
+  getWeekSummaryAction,
   updateLogEntryQuantityAction,
   type DaySummary,
   type LogEntryDisplay,
+  type WeekSummary,
 } from "@/lib/nutrition/actions";
-import { shiftDateKey, todayDateKey } from "@/lib/nutrition/date";
+import { getWeekDates, getWeekStartKey, shiftDateKey, todayDateKey } from "@/lib/nutrition/date";
 import type { MealType } from "@/generated/prisma/client";
 import { MealFoodPicker } from "./meal-food-picker";
 
@@ -39,6 +42,8 @@ const NUTRIENT_LABELS = [
   { key: "carbs", label: "Carbohidratos", unit: "g" },
   { key: "fat", label: "Grasa", unit: "g" },
 ] as const;
+
+const WEEKDAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
 
 function round(n: number) {
   return Math.round(n * 10) / 10;
@@ -131,6 +136,146 @@ function EntryRow({
   );
 }
 
+function WeekStrip({
+  weekStartKey,
+  selectedDateKey,
+  onSelect,
+  onShiftWeek,
+}: {
+  weekStartKey: string;
+  selectedDateKey: string;
+  onSelect: (dateKey: string) => void;
+  onShiftWeek: (weeks: number) => void;
+}) {
+  const dates = getWeekDates(weekStartKey);
+  const today = todayDateKey();
+
+  return (
+    <div className="flex items-center gap-2">
+      <Button
+        variant="outline"
+        size="icon-sm"
+        aria-label="Semana anterior"
+        onClick={() => onShiftWeek(-1)}
+      >
+        <ChevronLeft className="size-4" />
+      </Button>
+      <div className="grid flex-1 grid-cols-7 gap-1">
+        {dates.map((dateKey, i) => {
+          const dayNum = Number(dateKey.slice(8, 10));
+          const isSelected = dateKey === selectedDateKey;
+          const isToday = dateKey === today;
+          return (
+            <button
+              key={dateKey}
+              type="button"
+              onClick={() => onSelect(dateKey)}
+              className={cn(
+                "flex flex-col items-center gap-0.5 rounded-lg py-1.5 text-xs transition-colors",
+                isSelected
+                  ? "bg-primary text-primary-foreground"
+                  : "text-foreground hover:bg-muted",
+                !isSelected && isToday && "ring-1 ring-inset ring-primary/50",
+              )}
+            >
+              <span className="text-[10px] uppercase opacity-70">{WEEKDAY_LABELS[i]}</span>
+              <span className="font-medium">{dayNum}</span>
+            </button>
+          );
+        })}
+      </div>
+      <Button
+        variant="outline"
+        size="icon-sm"
+        aria-label="Semana siguiente"
+        onClick={() => onShiftWeek(1)}
+      >
+        <ChevronRight className="size-4" />
+      </Button>
+    </div>
+  );
+}
+
+function WeeklySummaryCard({ weekSummary }: { weekSummary: WeekSummary | null }) {
+  if (!weekSummary) {
+    return (
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-5 w-32" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-20 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const { goal, days, average } = weekSummary;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Resumen semanal</CardTitle>
+        {!goal && (
+          <CardDescription>
+            Todavía no definiste una meta.{" "}
+            <Link href="/goals" className="underline">
+              Definirla
+            </Link>
+          </CardDescription>
+        )}
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        {average ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {NUTRIENT_LABELS.map(({ key, label, unit }) => {
+              const value = round(average[key]);
+              const goalValue = goal?.[key];
+              return (
+                <div key={key}>
+                  <p className="text-xs text-muted-foreground">{label} (prom.)</p>
+                  <p className="text-sm font-medium">
+                    {value}
+                    {goalValue !== undefined ? ` / ${goalValue}` : ""} {unit}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">Sin registros esta semana.</p>
+        )}
+
+        {goal && (
+          <div className="grid grid-cols-7 gap-1.5">
+            {days.map((day, i) => {
+              const pct = Math.max(
+                0,
+                Math.min(100, round((day.totals.calories / goal.calories) * 100)),
+              );
+              return (
+                <div key={day.dateKey} className="flex flex-col items-center gap-1">
+                  <div className="flex h-16 w-full items-end overflow-hidden rounded-md bg-muted/50">
+                    {day.hasEntries ? (
+                      <div
+                        className="w-full rounded-md bg-primary"
+                        style={{ height: `${pct}%` }}
+                      />
+                    ) : (
+                      <div className="h-1 w-full rounded-md bg-border" />
+                    )}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">{WEEKDAY_LABELS[i]}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function DashboardSkeleton() {
   return (
     <div className="flex w-full max-w-2xl flex-col gap-6">
@@ -171,20 +316,52 @@ function DashboardSkeleton() {
 export function DashboardClient() {
   const [dateKey, setDateKey] = useState(todayDateKey());
   const [summary, setSummary] = useState<DaySummary | null>(null);
+  const [weekSummaryEntry, setWeekSummaryEntry] = useState<{
+    key: string;
+    data: WeekSummary;
+  } | null>(null);
   const [openMealType, setOpenMealType] = useState<MealType | null>(null);
   const [pending, startTransition] = useTransition();
+  const dayRequestRef = useRef(0);
+  const weekRequestRef = useRef(0);
 
-  function refresh() {
+  const weekStartKey = getWeekStartKey(dateKey);
+  const weekSummary = weekSummaryEntry?.key === weekStartKey ? weekSummaryEntry.data : null;
+
+  function refreshDay() {
+    const requestId = ++dayRequestRef.current;
     startTransition(async () => {
       const result = await getDaySummaryAction(dateKey);
-      setSummary(result);
+      if (dayRequestRef.current === requestId) {
+        setSummary(result);
+      }
     });
   }
 
+  function refreshWeek() {
+    const requestId = ++weekRequestRef.current;
+    const key = weekStartKey;
+    getWeekSummaryAction(key).then((result) => {
+      if (weekRequestRef.current === requestId) {
+        setWeekSummaryEntry({ key, data: result });
+      }
+    });
+  }
+
+  function refreshAll() {
+    refreshDay();
+    refreshWeek();
+  }
+
   useEffect(() => {
-    refresh();
+    refreshDay();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateKey]);
+
+  useEffect(() => {
+    refreshWeek();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekStartKey]);
 
   if (!summary) {
     return <DashboardSkeleton />;
@@ -192,27 +369,29 @@ export function DashboardClient() {
 
   return (
     <div className="flex w-full max-w-2xl flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <Button variant="outline" size="sm" onClick={() => setDateKey((d) => shiftDateKey(d, -1))}>
-          ← Anterior
-        </Button>
-        <span className="text-sm font-medium">{dateKey}</span>
-        <Button variant="outline" size="sm" onClick={() => setDateKey((d) => shiftDateKey(d, 1))}>
-          Siguiente →
-        </Button>
-      </div>
+      <WeekStrip
+        weekStartKey={weekStartKey}
+        selectedDateKey={dateKey}
+        onSelect={setDateKey}
+        onShiftWeek={(weeks) => setDateKey((d) => shiftDateKey(d, weeks * 7))}
+      />
+
+      <WeeklySummaryCard weekSummary={weekSummary} />
 
       <Card>
         <CardHeader>
           <CardTitle>Totales del día</CardTitle>
-          {!summary?.goal && (
-            <CardDescription>
-              Todavía no definiste una meta.{" "}
-              <Link href="/goals" className="underline">
-                Definirla
-              </Link>
-            </CardDescription>
-          )}
+          <CardDescription>
+            {dateKey}
+            {!summary?.goal && (
+              <>
+                {" · "}Todavía no definiste una meta.{" "}
+                <Link href="/goals" className="underline">
+                  Definirla
+                </Link>
+              </>
+            )}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {summary && (
@@ -251,7 +430,7 @@ export function DashboardClient() {
           <CardContent className="flex flex-col gap-2">
             {summary?.entriesByMeal[mealType].length ? (
               summary.entriesByMeal[mealType].map((entry) => (
-                <EntryRow key={entry.id} entry={entry} onChanged={refresh} />
+                <EntryRow key={entry.id} entry={entry} onChanged={refreshAll} />
               ))
             ) : (
               <p className="text-sm text-muted-foreground">Sin entradas.</p>
@@ -269,7 +448,7 @@ export function DashboardClient() {
           mealLabel={MEAL_LABELS[openMealType]}
           mealType={openMealType}
           dateKey={dateKey}
-          onAdded={refresh}
+          onAdded={refreshAll}
         />
       )}
 

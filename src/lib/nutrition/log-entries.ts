@@ -20,6 +20,17 @@ export async function listLogEntriesForDate(date: Date): Promise<FoodLogEntryWit
   });
 }
 
+export async function listLogEntriesForDateRange(
+  startDate: Date,
+  endDate: Date,
+): Promise<FoodLogEntryWithDetails[]> {
+  return prisma.foodLogEntry.findMany({
+    where: { date: { gte: startDate, lte: endDate } },
+    include: LOG_ENTRY_INCLUDE,
+    orderBy: { createdAt: "asc" },
+  });
+}
+
 export type CreateLogEntryInput = {
   foodId?: string;
   recipeId?: string;

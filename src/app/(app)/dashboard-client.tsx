@@ -36,17 +36,42 @@ const MEAL_LABELS: Record<MealType, string> = {
   SNACK: "Snack",
 };
 
-const NUTRIENT_LABELS = [
-  { key: "calories", label: "Calorías", unit: "kcal" },
-  { key: "protein", label: "Proteína", unit: "g" },
-  { key: "carbs", label: "Carbohidratos", unit: "g" },
-  { key: "fat", label: "Grasa", unit: "g" },
-] as const;
-
 const WEEKDAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
 
 function round(n: number) {
   return Math.round(n * 10) / 10;
+}
+
+function NutrientBar({
+  label,
+  unit,
+  consumed,
+  goal,
+}: {
+  label: string;
+  unit: string;
+  consumed: number;
+  goal?: number;
+}) {
+  const pct = goal ? Math.max(0, Math.min(100, (consumed / goal) * 100)) : 0;
+
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
+      <span className="truncate text-xs text-muted-foreground">{label}</span>
+      <span className="text-sm font-medium whitespace-nowrap">
+        {consumed}
+        {goal !== undefined ? ` / ${goal}` : ""} {unit}
+      </span>
+      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+        {goal !== undefined && (
+          <div
+            className="h-full rounded-full bg-primary transition-all"
+            style={{ width: `${pct}%` }}
+          />
+        )}
+      </div>
+    </div>
+  );
 }
 
 function EntryRow({
@@ -227,20 +252,33 @@ function WeeklySummaryCard({ weekSummary }: { weekSummary: WeekSummary | null })
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {average ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {NUTRIENT_LABELS.map(({ key, label, unit }) => {
-              const value = round(average[key]);
-              const goalValue = goal?.[key];
-              return (
-                <div key={key}>
-                  <p className="text-xs text-muted-foreground">{label} (prom.)</p>
-                  <p className="text-sm font-medium">
-                    {value}
-                    {goalValue !== undefined ? ` / ${goalValue}` : ""} {unit}
-                  </p>
-                </div>
-              );
-            })}
+          <div className="flex flex-col gap-3">
+            <NutrientBar
+              label="Calorías (prom.)"
+              unit="kcal"
+              consumed={round(average.calories)}
+              goal={goal?.calories}
+            />
+            <div className="grid grid-cols-3 gap-3">
+              <NutrientBar
+                label="Proteína (prom.)"
+                unit="g"
+                consumed={round(average.protein)}
+                goal={goal?.protein}
+              />
+              <NutrientBar
+                label="Carbohidratos (prom.)"
+                unit="g"
+                consumed={round(average.carbs)}
+                goal={goal?.carbs}
+              />
+              <NutrientBar
+                label="Grasa (prom.)"
+                unit="g"
+                consumed={round(average.fat)}
+                goal={goal?.fat}
+              />
+            </div>
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">Sin registros esta semana.</p>
@@ -395,20 +433,33 @@ export function DashboardClient() {
         </CardHeader>
         <CardContent>
           {summary && (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {NUTRIENT_LABELS.map(({ key, label, unit }) => {
-                const consumed = round(summary.totals[key]);
-                const goalValue = summary.goal?.[key];
-                return (
-                  <div key={key}>
-                    <p className="text-xs text-muted-foreground">{label}</p>
-                    <p className="text-sm font-medium">
-                      {consumed}
-                      {goalValue !== undefined ? ` / ${goalValue}` : ""} {unit}
-                    </p>
-                  </div>
-                );
-              })}
+            <div className="flex flex-col gap-3">
+              <NutrientBar
+                label="Calorías"
+                unit="kcal"
+                consumed={round(summary.totals.calories)}
+                goal={summary.goal?.calories}
+              />
+              <div className="grid grid-cols-3 gap-3">
+                <NutrientBar
+                  label="Proteína"
+                  unit="g"
+                  consumed={round(summary.totals.protein)}
+                  goal={summary.goal?.protein}
+                />
+                <NutrientBar
+                  label="Carbohidratos"
+                  unit="g"
+                  consumed={round(summary.totals.carbs)}
+                  goal={summary.goal?.carbs}
+                />
+                <NutrientBar
+                  label="Grasa"
+                  unit="g"
+                  consumed={round(summary.totals.fat)}
+                  goal={summary.goal?.fat}
+                />
+              </div>
             </div>
           )}
         </CardContent>

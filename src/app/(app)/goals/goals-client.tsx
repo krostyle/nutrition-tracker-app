@@ -14,6 +14,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -405,30 +412,23 @@ function ObjectivesTab({
   );
 }
 
-function MeasurementsTab({
-  profile,
-  onSaved,
+function AddMeasurementDialog({
+  open,
+  onOpenChange,
+  needsHip,
+  onAdded,
 }: {
-  profile: Profile | null;
-  onSaved: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  needsHip: boolean;
+  onAdded: () => void;
 }) {
   const [weightKg, setWeightKg] = useState("");
   const [neckCm, setNeckCm] = useState("");
   const [waistCm, setWaistCm] = useState("");
   const [hipCm, setHipCm] = useState("");
   const [pending, startTransition] = useTransition();
-  const [history, setHistory] = useState<BodyMeasurement[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const needsHip = profile?.sex === "FEMALE";
-
-  function loadHistory() {
-    listMeasurementsAction().then(setHistory);
-  }
-
-  useEffect(() => {
-    loadHistory();
-  }, []);
 
   const canSubmit =
     weightKg.trim() !== "" &&
@@ -456,85 +456,132 @@ function MeasurementsTab({
       setNeckCm("");
       setWaistCm("");
       setHipCm("");
-      loadHistory();
-      onSaved();
+      onAdded();
     });
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {error && <p className="text-sm text-destructive">{error}</p>}
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="measurement-weight">Peso (kg)</Label>
-          <Input
-            id="measurement-weight"
-            type="number"
-            step="any"
-            value={weightKg}
-            onChange={(e) => setWeightKg(e.target.value)}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="measurement-neck">Cuello (cm)</Label>
-          <Input
-            id="measurement-neck"
-            type="number"
-            step="any"
-            value={neckCm}
-            onChange={(e) => setNeckCm(e.target.value)}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="measurement-waist">Cintura (cm)</Label>
-          <Input
-            id="measurement-waist"
-            type="number"
-            step="any"
-            value={waistCm}
-            onChange={(e) => setWaistCm(e.target.value)}
-          />
-        </div>
-        {needsHip && (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Nueva medición</DialogTitle>
+          <DialogDescription>Se guarda con la fecha de hoy.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="measurement-hip">Cadera (cm)</Label>
+            <Label htmlFor="measurement-weight">Peso (kg)</Label>
             <Input
-              id="measurement-hip"
+              id="measurement-weight"
               type="number"
               step="any"
-              value={hipCm}
-              onChange={(e) => setHipCm(e.target.value)}
+              value={weightKg}
+              onChange={(e) => setWeightKg(e.target.value)}
             />
           </div>
-        )}
-        <Button type="submit" disabled={!canSubmit || pending}>
-          {pending ? "Guardando..." : "Agregar medición"}
-        </Button>
-      </form>
-
-      <div>
-        <h3 className="mb-2 text-sm font-medium">Historial</h3>
-        {history === null ? (
-          <Skeleton className="h-16 w-full" />
-        ) : history.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Todavía no cargaste mediciones.</p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {history.map((m) => (
-              <div
-                key={m.id}
-                className="flex flex-col gap-0.5 rounded-lg border px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between"
-              >
-                <span className="font-medium">{new Date(m.date).toISOString().slice(0, 10)}</span>
-                <span className="text-muted-foreground">
-                  {m.weightKg}kg · cuello {m.neckCm}cm · cintura {m.waistCm}cm
-                  {m.hipCm !== null ? ` · cadera ${m.hipCm}cm` : ""}
-                </span>
-              </div>
-            ))}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="measurement-neck">Cuello (cm)</Label>
+            <Input
+              id="measurement-neck"
+              type="number"
+              step="any"
+              value={neckCm}
+              onChange={(e) => setNeckCm(e.target.value)}
+            />
           </div>
-        )}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="measurement-waist">Cintura (cm)</Label>
+            <Input
+              id="measurement-waist"
+              type="number"
+              step="any"
+              value={waistCm}
+              onChange={(e) => setWaistCm(e.target.value)}
+            />
+          </div>
+          {needsHip && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="measurement-hip">Cadera (cm)</Label>
+              <Input
+                id="measurement-hip"
+                type="number"
+                step="any"
+                value={hipCm}
+                onChange={(e) => setHipCm(e.target.value)}
+              />
+            </div>
+          )}
+          <Button type="submit" disabled={!canSubmit || pending}>
+            {pending ? "Guardando..." : "Agregar medición"}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function MeasurementsTab({
+  profile,
+  onSaved,
+}: {
+  profile: Profile | null;
+  onSaved: () => void;
+}) {
+  const [history, setHistory] = useState<BodyMeasurement[] | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const needsHip = profile?.sex === "FEMALE";
+
+  function loadHistory() {
+    listMeasurementsAction().then(setHistory);
+  }
+
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
+  function handleAdded() {
+    loadHistory();
+    onSaved();
+    setDialogOpen(false);
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium">Historial</h3>
+        <Button size="sm" onClick={() => setDialogOpen(true)}>
+          Agregar medición
+        </Button>
       </div>
+
+      {history === null ? (
+        <Skeleton className="h-16 w-full" />
+      ) : history.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Todavía no cargaste mediciones.</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {history.map((m) => (
+            <div
+              key={m.id}
+              className="flex flex-col gap-0.5 rounded-lg border px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between"
+            >
+              <span className="font-medium">{new Date(m.date).toISOString().slice(0, 10)}</span>
+              <span className="text-muted-foreground">
+                {m.weightKg}kg · cuello {m.neckCm}cm · cintura {m.waistCm}cm
+                {m.hipCm !== null ? ` · cadera ${m.hipCm}cm` : ""}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <AddMeasurementDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        needsHip={needsHip}
+        onAdded={handleAdded}
+      />
     </div>
   );
 }

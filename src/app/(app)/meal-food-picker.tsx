@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { Barcode, Bookmark, ChefHat, Search, SquarePen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -565,46 +566,54 @@ export function MealFoodPicker({
               </TabsList>
             </div>
 
-            <TabsContent value="saved">
+            <TabsContent value="saved" className="pb-28 sm:pb-0">
               <SavedFoodsPickerTab onSelect={setCandidate} />
             </TabsContent>
-            <TabsContent value="search">
+            <TabsContent value="search" className="pb-28 sm:pb-0">
               <SearchByNamePickerTab onSelect={setCandidate} />
             </TabsContent>
-            <TabsContent value="barcode">
+            <TabsContent value="barcode" className="pb-28 sm:pb-0">
               <BarcodePickerTab onSelect={setCandidate} />
             </TabsContent>
-            <TabsContent value="recipes">
+            <TabsContent value="recipes" className="pb-28 sm:pb-0">
               <RecipesPickerTab onSelect={setCandidate} />
             </TabsContent>
-            <TabsContent value="manual">
+            <TabsContent value="manual" className="pb-28 sm:pb-0">
               <ManualPickerTab pending={pending} onSubmit={confirmManual} />
             </TabsContent>
 
-            <div className="sm:hidden">
-              <TabsList className={cn(floatingTabListClass, "w-full")}>
-                <TabsTrigger value="saved" className={floatingTabTriggerClass}>
-                  <TabIconBadge tint="amber" icon={Bookmark} className="size-6" />
-                  <span className={floatingTabLabelClass}>Guardados</span>
-                </TabsTrigger>
-                <TabsTrigger value="search" className={floatingTabTriggerClass}>
-                  <TabIconBadge tint="blue" icon={Search} className="size-6" />
-                  <span className={floatingTabLabelClass}>Buscar</span>
-                </TabsTrigger>
-                <TabsTrigger value="barcode" className={floatingTabTriggerClass}>
-                  <TabIconBadge tint="emerald" icon={Barcode} className="size-6" />
-                  <span className={floatingTabLabelClass}>Escanear</span>
-                </TabsTrigger>
-                <TabsTrigger value="recipes" className={floatingTabTriggerClass}>
-                  <TabIconBadge tint="rose" icon={ChefHat} className="size-6" />
-                  <span className={floatingTabLabelClass}>Recetas</span>
-                </TabsTrigger>
-                <TabsTrigger value="manual" className={floatingTabTriggerClass}>
-                  <TabIconBadge tint="violet" icon={SquarePen} className="size-6" />
-                  <span className={floatingTabLabelClass}>Manual</span>
-                </TabsTrigger>
-              </TabsList>
-            </div>
+            {createPortal(
+              <div className="fixed inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-60 flex justify-center px-4 sm:hidden">
+                <TabsList
+                  className={cn(
+                    floatingTabListClass,
+                    "w-full max-w-sm border border-border/50 bg-popover shadow-lg ring-1 ring-foreground/10",
+                  )}
+                >
+                  <TabsTrigger value="saved" className={floatingTabTriggerClass}>
+                    <TabIconBadge tint="amber" icon={Bookmark} className="size-6" />
+                    <span className={floatingTabLabelClass}>Guardados</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="search" className={floatingTabTriggerClass}>
+                    <TabIconBadge tint="blue" icon={Search} className="size-6" />
+                    <span className={floatingTabLabelClass}>Buscar</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="barcode" className={floatingTabTriggerClass}>
+                    <TabIconBadge tint="emerald" icon={Barcode} className="size-6" />
+                    <span className={floatingTabLabelClass}>Escanear</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="recipes" className={floatingTabTriggerClass}>
+                    <TabIconBadge tint="rose" icon={ChefHat} className="size-6" />
+                    <span className={floatingTabLabelClass}>Recetas</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="manual" className={floatingTabTriggerClass}>
+                    <TabIconBadge tint="violet" icon={SquarePen} className="size-6" />
+                    <span className={floatingTabLabelClass}>Manual</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>,
+              document.body,
+            )}
           </Tabs>
         )}
       </DialogContent>

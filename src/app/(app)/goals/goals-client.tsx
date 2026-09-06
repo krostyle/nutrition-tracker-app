@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { Ruler, Target, UserRound } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +22,12 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  TabIconBadge,
+  floatingTabLabelClass,
+  floatingTabListClass,
+  floatingTabTriggerClass,
+} from "@/components/ui/floating-tab-bar";
 import { getGoalAction, saveGoalAction } from "@/lib/nutrition/actions";
 import { todayDateKey } from "@/lib/nutrition/date";
 import {
@@ -562,20 +570,45 @@ export function GoalsClient() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="meta">
-          <TabsList>
-            <TabsTrigger value="meta">Meta</TabsTrigger>
-            <TabsTrigger value="objetivos">Objetivos</TabsTrigger>
-            <TabsTrigger value="medidas">Medidas</TabsTrigger>
-          </TabsList>
-          <TabsContent value="meta">
+          <div className="hidden sm:block">
+            <TabsList className="w-full">
+              <TabsTrigger value="meta">Meta</TabsTrigger>
+              <TabsTrigger value="objetivos">Objetivos</TabsTrigger>
+              <TabsTrigger value="medidas">Medidas</TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="meta" className="pb-28 sm:pb-0">
             <MetaTab refreshKey={refreshKey} />
           </TabsContent>
-          <TabsContent value="objetivos">
+          <TabsContent value="objetivos" className="pb-28 sm:pb-0">
             {profileLoaded && <ObjectivesTab profile={profile} onSaved={handleChanged} />}
           </TabsContent>
-          <TabsContent value="medidas">
+          <TabsContent value="medidas" className="pb-28 sm:pb-0">
             <MeasurementsTab profile={profile} onSaved={handleChanged} />
           </TabsContent>
+
+          <div className="fixed inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 flex justify-center px-4 sm:hidden">
+            <TabsList
+              className={cn(
+                floatingTabListClass,
+                "w-full max-w-sm border border-border/50 bg-popover shadow-lg ring-1 ring-foreground/10",
+              )}
+            >
+              <TabsTrigger value="meta" className={floatingTabTriggerClass}>
+                <TabIconBadge tint="emerald" icon={Target} />
+                <span className={floatingTabLabelClass}>Meta</span>
+              </TabsTrigger>
+              <TabsTrigger value="objetivos" className={floatingTabTriggerClass}>
+                <TabIconBadge tint="blue" icon={UserRound} />
+                <span className={floatingTabLabelClass}>Objetivos</span>
+              </TabsTrigger>
+              <TabsTrigger value="medidas" className={floatingTabTriggerClass}>
+                <TabIconBadge tint="violet" icon={Ruler} />
+                <span className={floatingTabLabelClass}>Medidas</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
         </Tabs>
       </CardContent>
     </Card>

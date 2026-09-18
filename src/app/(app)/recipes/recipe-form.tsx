@@ -46,21 +46,23 @@ function IngredientPicker({ onAdd }: { onAdd: (food: Food) => void }) {
         onChange={(e) => handleChange(e.target.value)}
       />
       {results.length > 0 && (
-        <div className="flex max-h-60 flex-col overflow-y-auto rounded-lg border">
-          {results.map((food) => (
-            <button
-              type="button"
-              key={food.id}
-              className="border-b px-2 py-1 text-left text-sm last:border-b-0 hover:bg-muted"
-              onClick={() => {
-                onAdd(food);
-                setQuery("");
-                setResults([]);
-              }}
-            >
-              {food.name}
-            </button>
-          ))}
+        <div className="max-h-60 overflow-hidden rounded-lg border">
+          <div className="flex max-h-60 flex-col overflow-y-auto">
+            {results.map((food) => (
+              <button
+                type="button"
+                key={food.id}
+                className="border-b px-2 py-1 text-left text-sm last:border-b-0 hover:bg-muted"
+                onClick={() => {
+                  onAdd(food);
+                  setQuery("");
+                  setResults([]);
+                }}
+              >
+                {food.name}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>

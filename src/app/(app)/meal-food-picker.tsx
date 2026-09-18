@@ -193,20 +193,22 @@ function SavedFoodsPickerTab({ onSelect }: { onSelect: (c: Candidate) => void })
         value={query}
         onChange={(e) => handleChange(e.target.value)}
       />
-      <div className="flex max-h-52 flex-col overflow-y-auto rounded-lg border">
-        {foods.length === 0 ? (
-          <p className="p-2 text-sm text-muted-foreground">Sin resultados.</p>
-        ) : (
-          foods.map((food) => (
-            <ResultRow
-              key={food.id}
-              name={food.name}
-              brand={food.brand ?? undefined}
-              values={food}
-              onSelect={() => onSelect({ kind: "existing", foodId: food.id, food })}
-            />
-          ))
-        )}
+      <div className="max-h-52 overflow-hidden rounded-lg border">
+        <div className="flex max-h-52 flex-col overflow-y-auto">
+          {foods.length === 0 ? (
+            <p className="p-2 text-sm text-muted-foreground">Sin resultados.</p>
+          ) : (
+            foods.map((food) => (
+              <ResultRow
+                key={food.id}
+                name={food.name}
+                brand={food.brand ?? undefined}
+                values={food}
+                onSelect={() => onSelect({ kind: "existing", foodId: food.id, food })}
+              />
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
@@ -272,23 +274,25 @@ function SearchByNamePickerTab({ onSelect }: { onSelect: (c: Candidate) => void 
         </p>
       ))}
       {!tooShort && (
-        <div className="flex max-h-52 flex-col overflow-y-auto rounded-lg border">
-          {pending ? (
-            <p className="p-2 text-sm text-muted-foreground">Buscando...</p>
-          ) : items.length === 0 ? (
-            <p className="p-2 text-sm text-muted-foreground">Sin resultados.</p>
-          ) : (
-            items.map(({ result, source }) => (
-              <ResultRow
-                key={`${source}-${result.externalId}`}
-                name={result.name}
-                brand={result.brand}
-                values={result}
-                badge={source}
-                onSelect={() => onSelect({ kind: source, result })}
-              />
-            ))
-          )}
+        <div className="max-h-52 overflow-hidden rounded-lg border">
+          <div className="flex max-h-52 flex-col overflow-y-auto">
+            {pending ? (
+              <p className="p-2 text-sm text-muted-foreground">Buscando...</p>
+            ) : items.length === 0 ? (
+              <p className="p-2 text-sm text-muted-foreground">Sin resultados.</p>
+            ) : (
+              items.map(({ result, source }) => (
+                <ResultRow
+                  key={`${source}-${result.externalId}`}
+                  name={result.name}
+                  brand={result.brand}
+                  values={result}
+                  badge={source}
+                  onSelect={() => onSelect({ kind: source, result })}
+                />
+              ))
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -375,27 +379,29 @@ function RecipesPickerTab({ onSelect }: { onSelect: (c: Candidate) => void }) {
   }
 
   return (
-    <div className="flex max-h-60 flex-col overflow-y-auto rounded-lg border">
-      {recipes === null ? (
-        <p className="p-2 text-sm text-muted-foreground">Cargando...</p>
-      ) : recipes.length === 0 ? (
-        <p className="p-2 text-sm text-muted-foreground">Todavía no creaste recetas.</p>
-      ) : (
-        recipes.map((recipe) => (
-          <button
-            type="button"
-            key={recipe.id}
-            disabled={loadingId !== null}
-            onClick={() => handlePick(recipe)}
-            className="flex items-center justify-between gap-2 border-b px-2 py-2 text-left text-sm last:border-b-0 hover:bg-muted disabled:opacity-50"
-          >
-            <span className="min-w-0 flex-1 truncate font-medium">{recipe.name}</span>
-            <span className="shrink-0 text-xs text-muted-foreground">
-              {loadingId === recipe.id ? "Cargando..." : `${recipe.servings} porciones`}
-            </span>
-          </button>
-        ))
-      )}
+    <div className="max-h-60 overflow-hidden rounded-lg border">
+      <div className="flex max-h-60 flex-col overflow-y-auto">
+        {recipes === null ? (
+          <p className="p-2 text-sm text-muted-foreground">Cargando...</p>
+        ) : recipes.length === 0 ? (
+          <p className="p-2 text-sm text-muted-foreground">Todavía no creaste recetas.</p>
+        ) : (
+          recipes.map((recipe) => (
+            <button
+              type="button"
+              key={recipe.id}
+              disabled={loadingId !== null}
+              onClick={() => handlePick(recipe)}
+              className="flex items-center justify-between gap-2 border-b px-2 py-2 text-left text-sm last:border-b-0 hover:bg-muted disabled:opacity-50"
+            >
+              <span className="min-w-0 flex-1 truncate font-medium">{recipe.name}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">
+                {loadingId === recipe.id ? "Cargando..." : `${recipe.servings} porciones`}
+              </span>
+            </button>
+          ))
+        )}
+      </div>
     </div>
   );
 }

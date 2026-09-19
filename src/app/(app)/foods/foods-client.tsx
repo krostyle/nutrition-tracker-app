@@ -42,15 +42,14 @@ const SEARCH_DEBOUNCE_MS = 800;
 const MIN_QUERY_LENGTH = 3;
 
 function BarcodeTab() {
-  const [barcode, setBarcode] = useState("");
   const [scanning, setScanning] = useState(true);
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<ExternalFoodResult | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function runLookup(code: string) {
-    if (!code.trim()) return;
+  function handleDetected(code: string) {
+    setScanning(false);
     setResult(null);
     setNotFound(false);
     setError(null);
@@ -66,15 +65,11 @@ function BarcodeTab() {
     });
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    runLookup(barcode);
-  }
-
-  function handleDetected(code: string) {
-    setScanning(false);
-    setBarcode(code);
-    runLookup(code);
+  function rescan() {
+    setResult(null);
+    setNotFound(false);
+    setError(null);
+    setScanning(true);
   }
 
   return (
@@ -90,41 +85,24 @@ function BarcodeTab() {
         />
       ) : (
         <>
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <Input
-              placeholder="Código de barras"
-              value={barcode}
-              onChange={(e) => setBarcode(e.target.value)}
-            />
-            <Button type="submit" disabled={pending}>
-              {pending ? "Buscando..." : "Buscar"}
+          {pending && <FoodCardSkeleton />}
+          {!pending && notFound && (
+            <p className="text-sm text-muted-foreground">
+              No se encontró en Open Food Facts. Puedes cargarlo en la pestaña
+              &quot;Manual&quot;.
+            </p>
+          )}
+          {!pending && error && <p className="text-sm text-destructive">{error}</p>}
+          {!pending && result && (
+            <FoodResultCard result={result} source="OFF" onSave={() => saveOffFoodAction(result)} />
+          )}
+          {!pending && (
+            <Button type="button" variant="outline" onClick={rescan}>
+              <Camera className="size-4" />
+              Escanear otro código
             </Button>
-          </form>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setError(null);
-              setScanning(true);
-            }}
-          >
-            <Camera className="size-4" />
-            Escanear con cámara
-          </Button>
+          )}
         </>
-      )}
-
-      {notFound && (
-        <p className="text-sm text-muted-foreground">
-          No se encontró en Open Food Facts. Puedes cargarlo en la pestaña
-          &quot;Manual&quot;.
-        </p>
-      )}
-      {error && <p className="text-sm text-destructive">{error}</p>}
-
-      {pending && <FoodCardSkeleton />}
-      {!pending && result && (
-        <FoodResultCard result={result} source="OFF" onSave={() => saveOffFoodAction(result)} />
       )}
     </div>
   );

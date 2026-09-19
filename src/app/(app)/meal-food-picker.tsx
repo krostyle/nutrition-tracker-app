@@ -281,22 +281,19 @@ function SearchByNamePickerTab({ onSelect }: { onSelect: (c: Candidate) => void 
 }
 
 function BarcodePickerTab({ onSelect }: { onSelect: (c: Candidate) => void }) {
-  const [barcode, setBarcode] = useState("");
   const [scanning, setScanning] = useState(true);
   const [pending, startTransition] = useTransition();
   const [notFound, setNotFound] = useState(false);
-  const [result, setResult] = useState<ExternalFoodResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  function runLookup(code: string) {
-    if (!code.trim()) return;
-    setResult(null);
+  function handleDetected(code: string) {
+    setScanning(false);
     setNotFound(false);
     setError(null);
     startTransition(async () => {
       const lookup = await lookupBarcodeAction(code.trim());
       if (lookup.status === "found") {
-        setResult(lookup.result);
+        onSelect({ kind: "OFF", result: lookup.result });
       } else if (lookup.status === "not_found") {
         setNotFound(true);
       } else {
@@ -305,15 +302,10 @@ function BarcodePickerTab({ onSelect }: { onSelect: (c: Candidate) => void }) {
     });
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    runLookup(barcode);
-  }
-
-  function handleDetected(code: string) {
-    setScanning(false);
-    setBarcode(code);
-    runLookup(code);
+  function rescan() {
+    setNotFound(false);
+    setError(null);
+    setScanning(true);
   }
 
   return (
@@ -329,45 +321,20 @@ function BarcodePickerTab({ onSelect }: { onSelect: (c: Candidate) => void }) {
         />
       ) : (
         <>
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <Input
-              placeholder="Código de barras"
-              value={barcode}
-              onChange={(e) => setBarcode(e.target.value)}
-            />
-            <Button type="submit" disabled={pending}>
-              {pending ? "Buscando..." : "Buscar"}
+          {pending && <p className="text-sm text-muted-foreground">Buscando...</p>}
+          {!pending && notFound && (
+            <p className="text-sm text-muted-foreground">
+              No se encontró en Open Food Facts. Puedes cargarlo en la pestaña &quot;Manual&quot;.
+            </p>
+          )}
+          {!pending && error && <p className="text-sm text-destructive">{error}</p>}
+          {!pending && (
+            <Button type="button" variant="outline" onClick={rescan}>
+              <Camera className="size-4" />
+              Escanear otro código
             </Button>
-          </form>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setError(null);
-              setScanning(true);
-            }}
-          >
-            <Camera className="size-4" />
-            Escanear con cámara
-          </Button>
+          )}
         </>
-      )}
-      {notFound && (
-        <p className="text-sm text-muted-foreground">
-          No se encontró en Open Food Facts. Puedes cargarlo en la pestaña &quot;Manual&quot;.
-        </p>
-      )}
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      {result && (
-        <div className="rounded-lg border">
-          <ResultRow
-            name={result.name}
-            brand={result.brand}
-            values={result}
-            badge="OFF"
-            onSelect={() => onSelect({ kind: "OFF", result })}
-          />
-        </div>
       )}
     </div>
   );

@@ -32,7 +32,7 @@ import type { ManualFoodInput } from "@/lib/food-sources/persist";
 import { addFoodToMealAction, searchLocalFoodsAction } from "@/lib/nutrition/actions";
 import { getRecipeDetailAction, listRecipesAction } from "@/lib/nutrition/recipe-actions";
 import type { Food, MealType, Recipe } from "@/generated/prisma/client";
-import { MacroRow, NutritionFacts, scaleToServing, type NutrientValues } from "./foods/nutrition-facts";
+import { FoodNutritionDetail, MacroRow, type NutrientValues } from "./foods/nutrition-facts";
 
 const MIN_QUERY_LENGTH = 3;
 const SEARCH_DEBOUNCE_MS = 800;
@@ -115,8 +115,6 @@ function ConfirmQuantityFooter({
   onConfirm: (quantity: number) => void;
 }) {
   const isRecipe = candidate.kind === "recipe";
-  const unit = isRecipe ? "porciones" : "g";
-  const [quantity, setQuantity] = useState(isRecipe ? "1" : "100");
   const values = candidateValues(candidate);
   const brand = candidateBrand(candidate);
   const servingSize = candidateServingSize(candidate);
@@ -129,39 +127,21 @@ function ConfirmQuantityFooter({
         {brand && <p className="truncate text-xs text-muted-foreground">{brand}</p>}
       </div>
 
-      <div>
-        <h4 className="mb-1 text-xs font-medium text-muted-foreground">
-          {isRecipe ? "Por porción" : "Por 100g"}
-        </h4>
-        <NutritionFacts values={values} />
-      </div>
-
-      {servingSize !== undefined && (
-        <div>
-          <h4 className="mb-1 text-xs font-medium text-muted-foreground">
-            Por porción {servingLabel ? `(${servingLabel})` : ""}
-          </h4>
-          <NutritionFacts values={scaleToServing(values, servingSize)} />
-        </div>
-      )}
-
-      <div className="flex items-center gap-2">
-        <Input
-          className="w-20"
-          type="number"
-          step="any"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-        />
-        <span className="text-xs text-muted-foreground">{unit}</span>
-        <Button
-          size="sm"
-          disabled={pending || !Number(quantity)}
-          onClick={() => onConfirm(Number(quantity))}
-        >
-          {pending ? "Agregando..." : "Agregar"}
-        </Button>
-      </div>
+      <FoodNutritionDetail
+        baseValues={values}
+        isRecipe={isRecipe}
+        servingSize={servingSize}
+        servingLabel={servingLabel}
+        footer={(finalQuantity) => (
+          <Button
+            size="sm"
+            disabled={pending || !finalQuantity}
+            onClick={() => onConfirm(finalQuantity)}
+          >
+            {pending ? "Agregando..." : "Agregar"}
+          </Button>
+        )}
+      />
     </div>
   );
 }
@@ -581,7 +561,7 @@ export function MealFoodPicker({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Agregar a {mealLabel}</DialogTitle>
           <DialogDescription>Busca un alimento o cárgalo a mano.</DialogDescription>

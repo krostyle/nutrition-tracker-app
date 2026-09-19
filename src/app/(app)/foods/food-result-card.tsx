@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import type { ActionResult } from "@/lib/action-result";
 import type { ExternalFoodResult } from "@/lib/food-sources/actions";
-import { MacroRow, NutritionFacts, scaleToServing } from "./nutrition-facts";
+import { FoodNutritionDetail, MacroRow } from "./nutrition-facts";
 
 export function FoodResultCard({
   result,
@@ -83,27 +83,18 @@ export function FoodResultCard({
       </Card>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{result.name}</DialogTitle>
             <DialogDescription>
               {result.brand ? `${result.brand} · Valores nutricionales` : "Valores nutricionales"}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-4">
-            <div>
-              <h4 className="mb-1 text-xs font-medium text-muted-foreground">Por 100g</h4>
-              <NutritionFacts values={result} />
-            </div>
-            {result.servingSize !== undefined && (
-              <div>
-                <h4 className="mb-1 text-xs font-medium text-muted-foreground">
-                  Por porción {result.servingLabel ? `(${result.servingLabel})` : ""}
-                </h4>
-                <NutritionFacts values={scaleToServing(result, result.servingSize)} />
-              </div>
-            )}
-          </div>
+          <FoodNutritionDetail
+            baseValues={result}
+            servingSize={result.servingSize}
+            servingLabel={result.servingLabel}
+          />
           {saved ? (
             <Button disabled variant="outline" className="w-full">
               Guardado

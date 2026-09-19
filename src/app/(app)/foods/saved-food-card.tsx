@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { Food, FoodSource } from "@/generated/prisma/client";
-import { MacroRow, NutritionFacts, scaleToServing } from "./nutrition-facts";
+import { FoodNutritionDetail, MacroRow } from "./nutrition-facts";
 
 const SOURCE_LABELS: Record<FoodSource, string> = {
   OFF: "OFF",
@@ -51,27 +51,18 @@ export function SavedFoodCard({ food }: { food: Food }) {
       </Card>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{food.name}</DialogTitle>
             <DialogDescription>
               {food.brand ? `${food.brand} · Valores nutricionales` : "Valores nutricionales"}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-4">
-            <div>
-              <h4 className="mb-1 text-xs font-medium text-muted-foreground">Por 100g</h4>
-              <NutritionFacts values={food} />
-            </div>
-            {food.servingSize !== null && (
-              <div>
-                <h4 className="mb-1 text-xs font-medium text-muted-foreground">
-                  Por porción {food.servingLabel ? `(${food.servingLabel})` : ""}
-                </h4>
-                <NutritionFacts values={scaleToServing(food, food.servingSize)} />
-              </div>
-            )}
-          </div>
+          <FoodNutritionDetail
+            baseValues={food}
+            servingSize={food.servingSize ?? undefined}
+            servingLabel={food.servingLabel ?? undefined}
+          />
         </DialogContent>
       </Dialog>
     </>

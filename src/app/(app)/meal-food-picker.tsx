@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { Barcode, Bookmark, ChefHat, Search, SquarePen } from "lucide-react";
+import { Barcode, Bookmark, Camera, ChefHat, Search, SquarePen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BarcodeCameraScanner } from "@/components/barcode-camera-scanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -301,19 +302,19 @@ function SearchByNamePickerTab({ onSelect }: { onSelect: (c: Candidate) => void 
 
 function BarcodePickerTab({ onSelect }: { onSelect: (c: Candidate) => void }) {
   const [barcode, setBarcode] = useState("");
+  const [scanning, setScanning] = useState(false);
   const [pending, startTransition] = useTransition();
   const [notFound, setNotFound] = useState(false);
   const [result, setResult] = useState<ExternalFoodResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!barcode.trim()) return;
+  function runLookup(code: string) {
+    if (!code.trim()) return;
     setResult(null);
     setNotFound(false);
     setError(null);
     startTransition(async () => {
-      const lookup = await lookupBarcodeAction(barcode.trim());
+      const lookup = await lookupBarcodeAction(code.trim());
       if (lookup.status === "found") {
         setResult(lookup.result);
       } else if (lookup.status === "not_found") {
@@ -324,18 +325,53 @@ function BarcodePickerTab({ onSelect }: { onSelect: (c: Candidate) => void }) {
     });
   }
 
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    runLookup(barcode);
+  }
+
+  function handleDetected(code: string) {
+    setScanning(false);
+    setBarcode(code);
+    runLookup(code);
+  }
+
   return (
     <div className="flex flex-col gap-2">
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <Input
-          placeholder="Código de barras"
-          value={barcode}
-          onChange={(e) => setBarcode(e.target.value)}
+      {scanning ? (
+        <BarcodeCameraScanner
+          onDetected={handleDetected}
+          onCancel={() => setScanning(false)}
+          onError={(message) => {
+            setScanning(false);
+            setError(message);
+          }}
         />
-        <Button type="submit" disabled={pending}>
-          {pending ? "Buscando..." : "Buscar"}
-        </Button>
-      </form>
+      ) : (
+        <>
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <Input
+              placeholder="Código de barras"
+              value={barcode}
+              onChange={(e) => setBarcode(e.target.value)}
+            />
+            <Button type="submit" disabled={pending}>
+              {pending ? "Buscando..." : "Buscar"}
+            </Button>
+          </form>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setError(null);
+              setScanning(true);
+            }}
+          >
+            <Camera className="size-4" />
+            Escanear con cámara
+          </Button>
+        </>
+      )}
       {notFound && (
         <p className="text-sm text-muted-foreground">
           No se encontró en Open Food Facts. Puedes cargarlo en la pestaña &quot;Manual&quot;.

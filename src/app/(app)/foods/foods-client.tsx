@@ -94,7 +94,13 @@ function BarcodeTab() {
           )}
           {!pending && error && <p className="text-sm text-destructive">{error}</p>}
           {!pending && result && (
-            <FoodResultCard result={result} source="OFF" onSave={() => saveOffFoodAction(result)} />
+            <FoodResultCard
+              key={result.externalId}
+              result={result}
+              source="OFF"
+              onSave={() => saveOffFoodAction(result)}
+              defaultOpen
+            />
           )}
           {!pending && (
             <Button type="button" variant="outline" onClick={rescan}>

@@ -19,12 +19,14 @@ export function FoodResultCard({
   result,
   source,
   onSave,
+  defaultOpen = false,
 }: {
   result: ExternalFoodResult;
   source: "OFF" | "USDA";
   onSave: () => Promise<ActionResult<unknown>>;
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();

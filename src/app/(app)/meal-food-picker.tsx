@@ -282,7 +282,7 @@ function SearchByNamePickerTab({ onSelect }: { onSelect: (c: Candidate) => void 
 
 function BarcodePickerTab({ onSelect }: { onSelect: (c: Candidate) => void }) {
   const [barcode, setBarcode] = useState("");
-  const [scanning, setScanning] = useState(false);
+  const [scanning, setScanning] = useState(true);
   const [pending, startTransition] = useTransition();
   const [notFound, setNotFound] = useState(false);
   const [result, setResult] = useState<ExternalFoodResult | null>(null);

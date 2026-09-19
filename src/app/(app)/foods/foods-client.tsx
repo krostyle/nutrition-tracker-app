@@ -43,7 +43,7 @@ const MIN_QUERY_LENGTH = 3;
 
 function BarcodeTab() {
   const [barcode, setBarcode] = useState("");
-  const [scanning, setScanning] = useState(false);
+  const [scanning, setScanning] = useState(true);
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<ExternalFoodResult | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -457,13 +457,13 @@ export function FoodsClient() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="barcode">
+        <Tabs defaultValue="mine">
           <div className="hidden sm:block">
             <TabsList className="w-full">
-              <TabsTrigger value="barcode">Escanear</TabsTrigger>
-              <TabsTrigger value="search">Buscar</TabsTrigger>
-              <TabsTrigger value="manual">Manual</TabsTrigger>
               <TabsTrigger value="mine">Guardados</TabsTrigger>
+              <TabsTrigger value="search">Buscar</TabsTrigger>
+              <TabsTrigger value="barcode">Escanear</TabsTrigger>
+              <TabsTrigger value="manual">Manual</TabsTrigger>
             </TabsList>
           </div>
 
@@ -474,36 +474,36 @@ export function FoodsClient() {
                 "w-full max-w-sm border border-border/50 bg-popover shadow-lg ring-1 ring-foreground/10",
               )}
             >
-              <TabsTrigger value="barcode" className={floatingTabTriggerClass}>
-                <TabIconBadge tint="emerald" icon={Barcode} />
-                <span className={floatingTabLabelClass}>Escanear</span>
+              <TabsTrigger value="mine" className={floatingTabTriggerClass}>
+                <TabIconBadge tint="amber" icon={Bookmark} />
+                <span className={floatingTabLabelClass}>Guardados</span>
               </TabsTrigger>
               <TabsTrigger value="search" className={floatingTabTriggerClass}>
                 <TabIconBadge tint="blue" icon={Search} />
                 <span className={floatingTabLabelClass}>Buscar</span>
               </TabsTrigger>
+              <TabsTrigger value="barcode" className={floatingTabTriggerClass}>
+                <TabIconBadge tint="emerald" icon={Barcode} />
+                <span className={floatingTabLabelClass}>Escanear</span>
+              </TabsTrigger>
               <TabsTrigger value="manual" className={floatingTabTriggerClass}>
                 <TabIconBadge tint="violet" icon={SquarePen} />
                 <span className={floatingTabLabelClass}>Manual</span>
               </TabsTrigger>
-              <TabsTrigger value="mine" className={floatingTabTriggerClass}>
-                <TabIconBadge tint="amber" icon={Bookmark} />
-                <span className={floatingTabLabelClass}>Guardados</span>
-              </TabsTrigger>
             </TabsList>
           </div>
 
-          <TabsContent value="barcode" className="pb-28 sm:pb-0">
-            <BarcodeTab />
+          <TabsContent value="mine" className="pb-28 sm:pb-0">
+            <MyFoodsTab />
           </TabsContent>
           <TabsContent value="search" className="pb-28 sm:pb-0">
             <SearchTab />
           </TabsContent>
+          <TabsContent value="barcode" className="pb-28 sm:pb-0">
+            <BarcodeTab />
+          </TabsContent>
           <TabsContent value="manual" className="pb-28 sm:pb-0">
             <ManualTab />
-          </TabsContent>
-          <TabsContent value="mine" className="pb-28 sm:pb-0">
-            <MyFoodsTab />
           </TabsContent>
         </Tabs>
       </CardContent>

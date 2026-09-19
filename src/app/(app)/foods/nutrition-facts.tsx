@@ -5,10 +5,10 @@ import { Beef, Candy, ChevronDown, ChevronUp, Droplet, Droplets, Flame, Leaf, Wh
 import { Input } from "@/components/ui/input";
 
 export const MACROS = [
-  { key: "calories", label: "Calorías", unit: "kcal", icon: Flame },
-  { key: "protein", label: "Proteína", unit: "g", icon: Beef },
-  { key: "carbs", label: "Carbohidratos", unit: "g", icon: Wheat },
-  { key: "fat", label: "Grasa", unit: "g", icon: Droplet },
+  { key: "calories", label: "Calorías", short: "Cal.", unit: "kcal", icon: Flame },
+  { key: "protein", label: "Proteína", short: "Prot.", unit: "g", icon: Beef },
+  { key: "carbs", label: "Carbohidratos", short: "Carb.", unit: "g", icon: Wheat },
+  { key: "fat", label: "Grasa", short: "Grasa", unit: "g", icon: Droplet },
 ] as const;
 
 export const EXTRA_NUTRIENTS = [
@@ -43,31 +43,6 @@ export function MacroRow({ values }: { values: NutrientValues }) {
   );
 }
 
-export function NutritionFacts({ values }: { values: NutrientValues }) {
-  return (
-    <div className="flex flex-col rounded-lg border">
-      {[...MACROS, ...EXTRA_NUTRIENTS].map(({ key, label, unit, icon: Icon }) => {
-        const value = values[key];
-        if (value === null || value === undefined) return null;
-        return (
-          <div
-            key={key}
-            className="flex items-center justify-between border-b px-3 py-2 text-sm last:border-b-0"
-          >
-            <span className="flex items-center gap-2 text-muted-foreground">
-              <Icon className="size-4" />
-              {label}
-            </span>
-            <span className="font-medium">
-              {round(value)} {unit}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 export function scaleByFactor(values: NutrientValues, factor: number): NutrientValues {
   const scaled: NutrientValues = {};
   for (const { key } of [...MACROS, ...EXTRA_NUTRIENTS]) {
@@ -75,10 +50,6 @@ export function scaleByFactor(values: NutrientValues, factor: number): NutrientV
     if (value !== null && value !== undefined) scaled[key] = value * factor;
   }
   return scaled;
-}
-
-export function scaleToServing(values: NutrientValues, servingSize: number): NutrientValues {
-  return scaleByFactor(values, servingSize / 100);
 }
 
 export type MacroPercentages = { protein: number; carbs: number; fat: number };
@@ -187,11 +158,14 @@ export function FoodNutritionDetail({
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-4 gap-2 text-center">
-        {MACROS.map(({ key, unit: nutrientUnit, icon: Icon }) => (
+        {MACROS.map(({ key, short, unit: nutrientUnit, icon: Icon }) => (
           <div key={key} className="flex flex-col items-center gap-0.5 rounded-lg border p-2">
             <Icon className="size-4 text-muted-foreground" />
-            <span className="text-sm font-semibold">{round(scaled[key] ?? 0)}</span>
-            <span className="text-[10px] text-muted-foreground">{nutrientUnit}</span>
+            <span className="text-sm font-semibold">
+              {round(scaled[key] ?? 0)}
+              <span className="ml-0.5 text-[10px] font-normal text-muted-foreground">{nutrientUnit}</span>
+            </span>
+            <span className="text-[10px] leading-tight text-muted-foreground">{short}</span>
           </div>
         ))}
       </div>

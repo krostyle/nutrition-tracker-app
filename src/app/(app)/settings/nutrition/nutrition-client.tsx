@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { Flag, Ruler, Target } from "lucide-react";
+import { Calculator, Flag, Ruler, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -108,7 +108,7 @@ function CurrentGoalPanel() {
 
 type GoalValues = { calories: number; protein: number; carbs: number; fat: number };
 
-function RecommendationPanel({ onApplied }: { onApplied: () => void }) {
+function RecommendationTab({ onApplied }: { onApplied: () => void }) {
   const [result, setResult] = useState<RecommendationResult | null>(null);
   const [currentGoal, setCurrentGoal] = useState<GoalValues | null>(null);
   const [goalLoaded, setGoalLoaded] = useState(false);
@@ -175,58 +175,87 @@ function RecommendationPanel({ onApplied }: { onApplied: () => void }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Recomendación</CardTitle>
-        <CardDescription>Grasa corporal estimada: {round(r.bodyFatPercent)}%</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        <p className="text-sm text-muted-foreground">
-          Metabolismo basal: {round(r.bmr)} kcal · Gasto total estimado: {round(r.tdee)} kcal
-        </p>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div>
-            <p className="text-xs text-muted-foreground">Calorías</p>
-            <p className="text-sm font-medium">{recommended.calories} kcal</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Proteína</p>
-            <p className="text-sm font-medium">{recommended.protein} g</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Carbohidratos</p>
-            <p className="text-sm font-medium">{recommended.carbs} g</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Grasa</p>
-            <p className="text-sm font-medium">{recommended.fat} g</p>
-          </div>
-        </div>
-        {alreadyApplied ? (
-          <p className="text-sm text-muted-foreground">Esta es tu meta actual.</p>
-        ) : (
-          <Button size="sm" disabled={pending} onClick={apply}>
-            {pending ? "Aplicando..." : "Aplicar como meta"}
-          </Button>
-        )}
-        {error && <p className="text-sm text-destructive">{error}</p>}
-      </CardContent>
-    </Card>
-  );
-}
-
-function MetaTab({ refreshKey }: { refreshKey: number }) {
-  const [goalKey, setGoalKey] = useState(0);
-
-  return (
     <div className="flex flex-col gap-4">
-      <RecommendationPanel
-        key={refreshKey}
-        onApplied={() => setGoalKey((k) => k + 1)}
-      />
-      <div>
-        <h3 className="mb-2 text-sm font-medium">Meta actual</h3>
-        <CurrentGoalPanel key={goalKey} />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Recomendación</CardTitle>
+          <CardDescription>Grasa corporal estimada: {round(r.bodyFatPercent)}%</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <p className="text-sm text-muted-foreground">
+            Metabolismo basal: {round(r.bmr)} kcal · Gasto total estimado: {round(r.tdee)} kcal
+          </p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div>
+              <p className="text-xs text-muted-foreground">Calorías</p>
+              <p className="text-sm font-medium">{recommended.calories} kcal</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Proteína</p>
+              <p className="text-sm font-medium">{recommended.protein} g</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Carbohidratos</p>
+              <p className="text-sm font-medium">{recommended.carbs} g</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Grasa</p>
+              <p className="text-sm font-medium">{recommended.fat} g</p>
+            </div>
+          </div>
+          {alreadyApplied ? (
+            <p className="text-sm text-muted-foreground">Esta es tu meta actual.</p>
+          ) : (
+            <Button size="sm" disabled={pending} onClick={apply}>
+              {pending ? "Aplicando..." : "Aplicar como meta"}
+            </Button>
+          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </CardContent>
+      </Card>
+
+      <div className="flex flex-col gap-3 rounded-lg border p-3 text-sm text-muted-foreground">
+        <h3 className="text-sm font-medium text-foreground">Cómo se calcula</h3>
+        <div>
+          <p className="font-medium text-foreground">1. Metabolismo basal (BMR)</p>
+          <p>
+            Fórmula de Mifflin-St Jeor, la más usada para estimar cuántas calorías quema tu
+            cuerpo en reposo a partir de tu peso, estatura, edad y sexo.
+          </p>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">2. Gasto total (TDEE)</p>
+          <p>
+            Tu metabolismo basal multiplicado por un factor según tu nivel de actividad (de 1.2
+            si eres sedentario a 1.9 si eres muy activo).
+          </p>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">3. Calorías objetivo</p>
+          <p>
+            Tu gasto total ajustado según tu objetivo: −500 kcal para bajar grasa, sin cambio
+            para mantener, +300 kcal para subir músculo.
+          </p>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">4. Proteína y grasa</p>
+          <p>
+            Se fijan en gramos por kilo de tu peso actual (2.0 g/kg de proteína, 0.8 g/kg de
+            grasa) para cuidar tu masa muscular mientras cambias de peso.
+          </p>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">5. Carbohidratos</p>
+          <p>Lo que queda de las calorías objetivo después de restar proteína y grasa.</p>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">% de grasa corporal</p>
+          <p>
+            Método Navy (EE.UU.): usa las circunferencias de cuello y cintura (más cadera en
+            mujeres) junto a tu estatura — por eso se piden esas medidas en &quot;Progreso&quot;.
+            Es solo referencial, no reemplaza una medición clínica.
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -537,6 +566,7 @@ export function NutritionClient() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [goalKey, setGoalKey] = useState(0);
 
   function loadProfile() {
     getProfileAction().then((p) => {
@@ -554,6 +584,10 @@ export function NutritionClient() {
     setRefreshKey((k) => k + 1);
   }
 
+  function handleGoalApplied() {
+    setGoalKey((k) => k + 1);
+  }
+
   return (
     <Card className="w-full max-w-lg">
       <CardHeader>
@@ -568,13 +602,20 @@ export function NutritionClient() {
           <div className="hidden sm:block">
             <TabsList className="w-full">
               <TabsTrigger value="meta">Meta diaria</TabsTrigger>
+              <TabsTrigger value="recomendacion">Recomendación</TabsTrigger>
               <TabsTrigger value="objetivo">Objetivo</TabsTrigger>
               <TabsTrigger value="progreso">Progreso</TabsTrigger>
             </TabsList>
           </div>
 
           <TabsContent value="meta" className="pb-28 sm:pb-0">
-            <MetaTab refreshKey={refreshKey} />
+            <div>
+              <h3 className="mb-2 text-sm font-medium">Meta actual</h3>
+              <CurrentGoalPanel key={goalKey} />
+            </div>
+          </TabsContent>
+          <TabsContent value="recomendacion" className="pb-28 sm:pb-0">
+            <RecommendationTab key={refreshKey} onApplied={handleGoalApplied} />
           </TabsContent>
           <TabsContent value="objetivo" className="pb-28 sm:pb-0">
             {profileLoaded && <ObjectiveTab profile={profile} onSaved={handleChanged} />}
@@ -593,6 +634,10 @@ export function NutritionClient() {
               <TabsTrigger value="meta" className={floatingTabTriggerClass}>
                 <TabIconBadge tint="emerald" icon={Target} />
                 <span className={floatingTabLabelClass}>Meta diaria</span>
+              </TabsTrigger>
+              <TabsTrigger value="recomendacion" className={floatingTabTriggerClass}>
+                <TabIconBadge tint="amber" icon={Calculator} />
+                <span className={floatingTabLabelClass}>Recomendación</span>
               </TabsTrigger>
               <TabsTrigger value="objetivo" className={floatingTabTriggerClass}>
                 <TabIconBadge tint="blue" icon={Flag} />

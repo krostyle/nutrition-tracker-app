@@ -47,7 +47,7 @@ Este cálculo es lógica crítica del dominio (ver sección TDD más abajo).
 
 ## Metodología de trabajo
 
-Esta es la parte más importante de este documento. El flujo de trabajo para cualquier feature no trivial (que toca varios archivos o implica una decisión de diseño) sigue **siempre** este orden: **Spec → Plan → Código, una tarea a la vez**. No te saltes etapas ni implementes directamente desde un spec.
+Esta es la parte más importante de este documento. El flujo de trabajo para cualquier feature no trivial (que toca varios archivos o implica una decisión de diseño) sigue **siempre** este orden: **Spec → Plan → Código**. No te saltes etapas ni implementes directamente desde un spec sin haber escrito uno.
 
 ### 1. Spec first (Spec-Driven Development)
 
@@ -57,15 +57,15 @@ Antes de implementar una feature no trivial, se crea un spec en `specs/NNN-nombr
 - Reglas de negocio.
 - Criterios de aceptación.
 
-El spec se presenta al usuario y **se espera confirmación explícita** sobre su contenido antes de avanzar a la etapa de plan. No pasar a plan sin esa confirmación.
+El spec se presenta al usuario para que quede registro, pero **no hace falta esperar confirmación explícita** antes de avanzar a la etapa de plan — se puede seguir directo. El usuario da feedback correctivo después de ver el spec o los cambios ya implementados, no antes.
 
 ### 2. Plan antes de código
 
-Nunca se implementa directamente desde el spec. Con el spec aprobado, se presenta un **plan técnico**: una lista de tareas chicas y verificables. Se espera **aprobación del plan** antes de escribir cualquier código.
+Nunca se implementa directamente desde el spec sin pasar por un plan. Se presenta un **plan técnico**: una lista de tareas chicas y verificables. Igual que con el spec, **no hace falta esperar aprobación explícita** del plan antes de escribir código — se presenta como registro de lo que se va a hacer y se avanza directo a implementarlo.
 
-### 3. Una tarea a la vez
+### 3. Implementación continua
 
-Se implementa **una tarea del plan por vez**, nunca el plan completo de un saque. Después de cada tarea se muestra el diff correspondiente antes de pasar a la siguiente.
+Se implementa el plan completo de principio a fin sin pausar a pedir confirmación entre tareas. Al terminar se muestra un resumen de lo implementado (con sus diffs si aplica) para que el usuario revise y corrija lo que necesite.
 
 ### 4. TDD para lógica crítica
 
@@ -94,7 +94,7 @@ Nunca modificar un test existente para que pase sin decirlo explícitamente y ex
 
 Un spec se considera completo cuando, **todo** lo siguiente es cierto:
 
-- Todas las tareas de su plan están implementadas y aprobadas.
+- Todas las tareas de su plan están implementadas.
 - `npm run build` compila sin errores.
 - `npm run lint` no reporta problemas.
 - Si el spec incluye lógica crítica (parsing externo o cálculo de recetas), los tests correspondientes pasan en verde.

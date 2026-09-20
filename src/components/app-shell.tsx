@@ -1,40 +1,46 @@
 "use client";
 
-import { useState } from "react";
-import { Menu } from "lucide-react";
-import { AppSidebar } from "./app-sidebar";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { UserButton } from "@clerk/nextjs";
+import { ArrowLeft, Settings } from "lucide-react";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const isHome = pathname === "/";
 
   return (
-    <div className="flex flex-1">
-      <AppSidebar open={open} onNavigate={() => setOpen(false)} />
-
-      {open && (
-        <div
-          aria-hidden="true"
-          onClick={() => setOpen(false)}
-          className="fixed inset-0 z-30 bg-black/40 md:hidden"
-        />
-      )}
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center gap-2 border-b border-border bg-background px-4 py-3 md:hidden">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Abrir menú"
-            onClick={() => setOpen(true)}
+    <div className="flex min-h-screen flex-1 flex-col">
+      <header className="flex items-center justify-between border-b border-border bg-background px-4 py-3">
+        {isHome ? (
+          <span className="flex items-center gap-2 text-sm font-semibold">
+            <span className="flex size-6 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
+              N
+            </span>
+            Nutrition Tracker
+          </span>
+        ) : (
+          <Link
+            href="/"
+            className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
           >
-            <Menu className="size-5" />
-          </Button>
-          <span className="text-sm font-semibold">Nutrition Tracker</span>
-        </div>
+            <ArrowLeft className="size-4" />
+            Volver
+          </Link>
+        )}
 
-        <main className="flex flex-1 flex-col overflow-x-hidden">{children}</main>
-      </div>
+        <UserButton>
+          <UserButton.MenuItems>
+            <UserButton.Link
+              label="Configuración"
+              href="/goals"
+              labelIcon={<Settings className="size-4" />}
+            />
+          </UserButton.MenuItems>
+        </UserButton>
+      </header>
+
+      <main className="flex flex-1 flex-col overflow-x-hidden">{children}</main>
     </div>
   );
 }

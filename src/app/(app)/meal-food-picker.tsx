@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import { Barcode, Bookmark, Camera, ChefHat, Search, SquarePen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BarcodeCameraScanner } from "@/components/barcode-camera-scanner";
@@ -146,7 +147,13 @@ function ConfirmQuantityFooter({
   );
 }
 
-function SavedFoodsPickerTab({ onSelect }: { onSelect: (c: Candidate) => void }) {
+function SavedFoodsPickerTab({
+  onSelect,
+  onNavigate,
+}: {
+  onSelect: (c: Candidate) => void;
+  onNavigate: () => void;
+}) {
   const [query, setQuery] = useState("");
   const [foods, setFoods] = useState<Food[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -191,6 +198,13 @@ function SavedFoodsPickerTab({ onSelect }: { onSelect: (c: Candidate) => void })
           )}
         </div>
       </div>
+      <Link
+        href="/foods"
+        onClick={onNavigate}
+        className="text-center text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+      >
+        Gestionar mis alimentos guardados
+      </Link>
     </div>
   );
 }
@@ -340,7 +354,13 @@ function BarcodePickerTab({ onSelect }: { onSelect: (c: Candidate) => void }) {
   );
 }
 
-function RecipesPickerTab({ onSelect }: { onSelect: (c: Candidate) => void }) {
+function RecipesPickerTab({
+  onSelect,
+  onNavigate,
+}: {
+  onSelect: (c: Candidate) => void;
+  onNavigate: () => void;
+}) {
   const [recipes, setRecipes] = useState<Recipe[] | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
@@ -362,29 +382,38 @@ function RecipesPickerTab({ onSelect }: { onSelect: (c: Candidate) => void }) {
   }
 
   return (
-    <div className="max-h-60 overflow-hidden rounded-lg border">
-      <div className="flex max-h-60 flex-col overflow-y-auto">
-        {recipes === null ? (
-          <p className="p-2 text-sm text-muted-foreground">Cargando...</p>
-        ) : recipes.length === 0 ? (
-          <p className="p-2 text-sm text-muted-foreground">Todavía no creaste recetas.</p>
-        ) : (
-          recipes.map((recipe) => (
-            <button
-              type="button"
-              key={recipe.id}
-              disabled={loadingId !== null}
-              onClick={() => handlePick(recipe)}
-              className="flex items-center justify-between gap-2 border-b px-2 py-2 text-left text-sm last:border-b-0 hover:bg-muted disabled:opacity-50"
-            >
-              <span className="min-w-0 flex-1 truncate font-medium">{recipe.name}</span>
-              <span className="shrink-0 text-xs text-muted-foreground">
-                {loadingId === recipe.id ? "Cargando..." : `${recipe.servings} porciones`}
-              </span>
-            </button>
-          ))
-        )}
+    <div className="flex flex-col gap-2">
+      <div className="max-h-60 overflow-hidden rounded-lg border">
+        <div className="flex max-h-60 flex-col overflow-y-auto">
+          {recipes === null ? (
+            <p className="p-2 text-sm text-muted-foreground">Cargando...</p>
+          ) : recipes.length === 0 ? (
+            <p className="p-2 text-sm text-muted-foreground">Todavía no creaste recetas.</p>
+          ) : (
+            recipes.map((recipe) => (
+              <button
+                type="button"
+                key={recipe.id}
+                disabled={loadingId !== null}
+                onClick={() => handlePick(recipe)}
+                className="flex items-center justify-between gap-2 border-b px-2 py-2 text-left text-sm last:border-b-0 hover:bg-muted disabled:opacity-50"
+              >
+                <span className="min-w-0 flex-1 truncate font-medium">{recipe.name}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {loadingId === recipe.id ? "Cargando..." : `${recipe.servings} porciones`}
+                </span>
+              </button>
+            ))
+          )}
+        </div>
       </div>
+      <Link
+        href="/recipes"
+        onClick={onNavigate}
+        className="text-center text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+      >
+        Crear o gestionar recetas
+      </Link>
     </div>
   );
 }
@@ -556,7 +585,7 @@ export function MealFoodPicker({
             </div>
 
             <TabsContent value="saved" className="pb-28 sm:pb-0">
-              <SavedFoodsPickerTab onSelect={setCandidate} />
+              <SavedFoodsPickerTab onSelect={setCandidate} onNavigate={() => handleOpenChange(false)} />
             </TabsContent>
             <TabsContent value="search" className="pb-28 sm:pb-0">
               <SearchByNamePickerTab onSelect={setCandidate} />
@@ -565,7 +594,7 @@ export function MealFoodPicker({
               <BarcodePickerTab onSelect={setCandidate} />
             </TabsContent>
             <TabsContent value="recipes" className="pb-28 sm:pb-0">
-              <RecipesPickerTab onSelect={setCandidate} />
+              <RecipesPickerTab onSelect={setCandidate} onNavigate={() => handleOpenChange(false)} />
             </TabsContent>
             <TabsContent value="manual" className="pb-28 sm:pb-0">
               <ManualPickerTab pending={pending} onSubmit={confirmManual} />

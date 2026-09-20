@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { Flag, Ruler, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -46,13 +47,7 @@ import {
   saveProfileAction,
   type RecommendationResult,
 } from "@/lib/nutrition/profile-actions";
-import type {
-  ActivityLevel,
-  BodyMeasurement,
-  GoalType,
-  Profile,
-  Sex,
-} from "@/generated/prisma/client";
+import type { BodyMeasurement, GoalType, Profile } from "@/generated/prisma/client";
 
 function round(n: number) {
   return Math.round(n * 10) / 10;
@@ -164,7 +159,11 @@ function RecommendationPanel({ onApplied }: { onApplied: () => void }) {
   if (result.status === "missing_profile") {
     return (
       <p className="text-sm text-muted-foreground">
-        Completa la pestaña &quot;Objetivo&quot; para ver una recomendación.
+        Completa{" "}
+        <Link href="/settings/profile" className="underline">
+          Mis datos
+        </Link>{" "}
+        para ver una recomendación.
       </p>
     );
   }
@@ -251,147 +250,11 @@ function MetaTab({ refreshKey }: { refreshKey: number }) {
   );
 }
 
-const SEX_LABELS: Record<Sex, string> = { MALE: "Hombre", FEMALE: "Mujer" };
-const ACTIVITY_LABELS: Record<ActivityLevel, string> = {
-  SEDENTARY: "Sedentario (poco o nada de ejercicio)",
-  LIGHT: "Liviano (ejercicio 1-3 días/semana)",
-  MODERATE: "Moderado (ejercicio 3-5 días/semana)",
-  ACTIVE: "Activo (ejercicio 6-7 días/semana)",
-  VERY_ACTIVE: "Muy activo (ejercicio intenso a diario)",
-};
 const GOAL_TYPE_LABELS: Record<GoalType, string> = {
   LOSE_FAT: "Bajar grasa",
   MAINTAIN: "Mantener",
   GAIN_MUSCLE: "Subir músculo",
 };
-
-const ACTIVITY_SHORT_LABELS: Record<ActivityLevel, string> = {
-  SEDENTARY: "Sedentario",
-  LIGHT: "Liviano",
-  MODERATE: "Actividad moderada",
-  ACTIVE: "Activo",
-  VERY_ACTIVE: "Muy activo",
-};
-
-function EditProfileDialog({
-  open,
-  onOpenChange,
-  profile,
-  onSaved,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  profile: Profile | null;
-  onSaved: () => void;
-}) {
-  const [sex, setSex] = useState<Sex>(profile?.sex ?? "MALE");
-  const [age, setAge] = useState(profile ? String(profile.age) : "");
-  const [heightCm, setHeightCm] = useState(profile ? String(profile.heightCm) : "");
-  const [activityLevel, setActivityLevel] = useState<ActivityLevel>(
-    profile?.activityLevel ?? "MODERATE",
-  );
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-
-  const canSubmit =
-    age.trim() !== "" && heightCm.trim() !== "" && Number(age) > 0 && Number(heightCm) > 0;
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!canSubmit) return;
-    setError(null);
-    startTransition(async () => {
-      const outcome = await saveProfileAction({
-        sex,
-        age: Number(age),
-        heightCm: Number(heightCm),
-        activityLevel,
-        goalType: profile?.goalType ?? "MAINTAIN",
-        targetWeightKg: profile?.targetWeightKg ?? null,
-      });
-      if (outcome.ok) {
-        onSaved();
-        onOpenChange(false);
-      } else {
-        setError(outcome.message);
-      }
-    });
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Editar mis datos</DialogTitle>
-          <DialogDescription>Se usan para calcular tu recomendación.</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <div className="flex flex-col gap-1.5">
-            <Label>Sexo biológico</Label>
-            <Select items={SEX_LABELS} value={sex} onValueChange={(v) => setSex(v as Sex)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(SEX_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="profile-age">Edad</Label>
-            <Input
-              id="profile-age"
-              type="number"
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="profile-height">Estatura (cm)</Label>
-            <Input
-              id="profile-height"
-              type="number"
-              step="any"
-              value={heightCm}
-              onChange={(e) => setHeightCm(e.target.value)}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label>Nivel de actividad</Label>
-            <Select
-              items={ACTIVITY_LABELS}
-              value={activityLevel}
-              onValueChange={(v) => setActivityLevel(v as ActivityLevel)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(ACTIVITY_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Button type="submit" disabled={!canSubmit || pending}>
-            {pending ? "Guardando..." : "Guardar"}
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 function ObjectiveTab({
   profile,
@@ -407,8 +270,6 @@ function ObjectiveTab({
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [editOpen, setEditOpen] = useState(false);
-  const [editKey, setEditKey] = useState(0);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -432,89 +293,65 @@ function ObjectiveTab({
     });
   }
 
+  if (!profile) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Completa primero{" "}
+        <Link href="/settings/profile" className="underline">
+          Mis datos
+        </Link>{" "}
+        para poder definir un objetivo.
+      </p>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm">
-        {profile ? (
-          <span className="text-muted-foreground">
-            {SEX_LABELS[profile.sex]} · {profile.age} años · {profile.heightCm} cm ·{" "}
-            {ACTIVITY_SHORT_LABELS[profile.activityLevel]}
-          </span>
-        ) : (
-          <span className="text-muted-foreground">Todavía no cargaste tus datos.</span>
-        )}
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            setEditKey((k) => k + 1);
-            setEditOpen(true);
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {error && <p className="text-sm text-destructive">{error}</p>}
+
+      <div className="flex flex-col gap-1.5">
+        <Label>Objetivo</Label>
+        <Select
+          items={GOAL_TYPE_LABELS}
+          value={goalType}
+          onValueChange={(v) => {
+            setGoalType(v as GoalType);
+            setSaved(false);
           }}
         >
-          Editar mis datos
-        </Button>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(GOAL_TYPE_LABELS).map(([value, label]) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {error && <p className="text-sm text-destructive">{error}</p>}
-        {!profile && (
-          <p className="text-sm text-muted-foreground">
-            Completa primero tus datos para poder definir un objetivo.
-          </p>
-        )}
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="target-weight">
+          Peso objetivo (kg) <span className="text-muted-foreground">(opcional)</span>
+        </Label>
+        <Input
+          id="target-weight"
+          type="number"
+          step="any"
+          value={targetWeightKg}
+          onChange={(e) => {
+            setTargetWeightKg(e.target.value);
+            setSaved(false);
+          }}
+        />
+      </div>
 
-        <div className="flex flex-col gap-1.5">
-          <Label>Objetivo</Label>
-          <Select
-            items={GOAL_TYPE_LABELS}
-            value={goalType}
-            onValueChange={(v) => {
-              setGoalType(v as GoalType);
-              setSaved(false);
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(GOAL_TYPE_LABELS).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="target-weight">
-            Peso objetivo (kg) <span className="text-muted-foreground">(opcional)</span>
-          </Label>
-          <Input
-            id="target-weight"
-            type="number"
-            step="any"
-            value={targetWeightKg}
-            onChange={(e) => {
-              setTargetWeightKg(e.target.value);
-              setSaved(false);
-            }}
-          />
-        </div>
-
-        <Button type="submit" disabled={!profile || pending}>
-          {pending ? "Guardando..." : saved ? "Guardado" : "Guardar"}
-        </Button>
-      </form>
-
-      <EditProfileDialog
-        key={editKey}
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        profile={profile}
-        onSaved={onSaved}
-      />
-    </div>
+      <Button type="submit" disabled={pending}>
+        {pending ? "Guardando..." : saved ? "Guardado" : "Guardar"}
+      </Button>
+    </form>
   );
 }
 
@@ -714,7 +551,7 @@ function MeasurementsTab({
   );
 }
 
-export function GoalsClient() {
+export function NutritionClient() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -738,7 +575,7 @@ export function GoalsClient() {
   return (
     <Card className="w-full max-w-lg">
       <CardHeader>
-        <CardTitle>Metas</CardTitle>
+        <CardTitle>Nutrición</CardTitle>
         <CardDescription>
           Define tu objetivo y registra tu progreso para recibir una recomendación de calorías y
           macros.

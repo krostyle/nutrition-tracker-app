@@ -301,7 +301,7 @@ export function DashboardClient() {
             {!summary?.goal && (
               <>
                 {" · "}Todavía no definiste una meta.{" "}
-                <Link href="/goals" className="underline">
+                <Link href="/settings/nutrition" className="underline">
                   Definirla
                 </Link>
               </>

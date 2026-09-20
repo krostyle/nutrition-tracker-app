@@ -7,7 +7,9 @@ import { ArrowLeft, Settings } from "lucide-react";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isHome = pathname === "/";
+  const segments = pathname.split("/").filter(Boolean);
+  const isHome = segments.length === 0;
+  const parentPath = segments.length <= 1 ? "/" : `/${segments.slice(0, -1).join("/")}`;
 
   return (
     <div className="flex min-h-screen flex-1 flex-col">
@@ -21,7 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </span>
         ) : (
           <Link
-            href="/"
+            href={parentPath}
             className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="size-4" />
@@ -33,7 +35,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <UserButton.MenuItems>
             <UserButton.Link
               label="Configuración"
-              href="/goals"
+              href="/settings"
               labelIcon={<Settings className="size-4" />}
             />
           </UserButton.MenuItems>

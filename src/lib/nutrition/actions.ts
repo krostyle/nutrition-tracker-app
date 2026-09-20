@@ -7,7 +7,7 @@ import { createManualFood, persistExternalFood, type ManualFoodInput } from "@/l
 import { searchLocalFoods } from "@/lib/food-sources/search-local";
 import { aggregateNutrients, type AggregatedNutrients, type WeightedNutrients } from "./aggregate";
 import { getWeekDates, parseDateKey } from "./date";
-import { getGoal, saveGoal, type GoalInput } from "./goal";
+import { getGoal } from "./goal";
 import {
   createLogEntry,
   deleteLogEntry,
@@ -118,10 +118,6 @@ export async function getWeekSummaryAction(weekStartKey: string): Promise<WeekSu
 
 export async function getGoalAction(): Promise<Goal | null> {
   return getGoal();
-}
-
-export async function saveGoalAction(input: GoalInput): Promise<ActionResult<Goal>> {
-  return runAction(() => saveGoal(input), "No pudimos guardar la meta. Prueba de nuevo.");
 }
 
 export type CreateEntryActionInput = {

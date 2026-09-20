@@ -36,7 +36,7 @@ import {
   floatingTabListClass,
   floatingTabTriggerClass,
 } from "@/components/ui/floating-tab-bar";
-import { getGoalAction, saveGoalAction } from "@/lib/nutrition/actions";
+import { getGoalAction } from "@/lib/nutrition/actions";
 import { todayDateKey } from "@/lib/nutrition/date";
 import {
   applyRecommendationAsGoalAction,
@@ -47,98 +47,62 @@ import {
   saveProfileAction,
   type RecommendationResult,
 } from "@/lib/nutrition/profile-actions";
-import type { BodyMeasurement, GoalType, Profile } from "@/generated/prisma/client";
+import type { BodyMeasurement, Goal, GoalType, Profile } from "@/generated/prisma/client";
 
 function round(n: number) {
   return Math.round(n * 10) / 10;
 }
 
 const GOAL_FIELDS = [
-  { key: "calories", label: "Calorías (kcal)" },
-  { key: "protein", label: "Proteína (g)" },
-  { key: "carbs", label: "Carbohidratos (g)" },
-  { key: "fat", label: "Grasa (g)" },
+  { key: "calories", label: "Calorías", unit: "kcal" },
+  { key: "protein", label: "Proteína", unit: "g" },
+  { key: "carbs", label: "Carbohidratos", unit: "g" },
+  { key: "fat", label: "Grasa", unit: "g" },
 ] as const;
 
-function GoalForm() {
-  const [values, setValues] = useState<Record<string, string>>({});
+function CurrentGoalPanel() {
+  const [goal, setGoal] = useState<Goal | null>(null);
   const [loaded, setLoaded] = useState(false);
-  const [pending, startTransition] = useTransition();
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getGoalAction().then((goal) => {
-      if (goal) {
-        setValues({
-          calories: String(goal.calories),
-          protein: String(goal.protein),
-          carbs: String(goal.carbs),
-          fat: String(goal.fat),
-        });
-      }
+    getGoalAction().then((g) => {
+      setGoal(g);
       setLoaded(true);
     });
   }, []);
 
-  const canSubmit = GOAL_FIELDS.every((field) => values[field.key]?.trim());
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!canSubmit) return;
-
-    setError(null);
-    startTransition(async () => {
-      const outcome = await saveGoalAction({
-        calories: Number(values.calories),
-        protein: Number(values.protein),
-        carbs: Number(values.carbs),
-        fat: Number(values.fat),
-      });
-      if (outcome.ok) {
-        setSaved(true);
-      } else {
-        setError(outcome.message);
-      }
-    });
-  }
-
   if (!loaded) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {GOAL_FIELDS.map((field) => (
           <div key={field.key} className="flex flex-col gap-1.5">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-5 w-full" />
           </div>
         ))}
-        <Skeleton className="h-8 w-full" />
       </div>
     );
   }
 
+  if (!goal) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Todavía no tienes una meta — aplica la recomendación de arriba para definirla.
+      </p>
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      {error && <p className="text-sm text-destructive">{error}</p>}
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       {GOAL_FIELDS.map((field) => (
-        <div key={field.key} className="flex flex-col gap-1.5">
-          <Label htmlFor={`goal-${field.key}`}>{field.label}</Label>
-          <Input
-            id={`goal-${field.key}`}
-            type="number"
-            step="any"
-            value={values[field.key] ?? ""}
-            onChange={(e) => {
-              setSaved(false);
-              setValues((prev) => ({ ...prev, [field.key]: e.target.value }));
-            }}
-          />
+        <div key={field.key}>
+          <p className="text-xs text-muted-foreground">{field.label}</p>
+          <p className="text-sm font-medium">
+            {round(goal[field.key])} {field.unit}
+          </p>
         </div>
       ))}
-      <Button type="submit" disabled={!canSubmit || pending}>
-        {pending ? "Guardando..." : saved ? "Guardado" : "Guardar"}
-      </Button>
-    </form>
+    </div>
   );
 }
 
@@ -244,7 +208,7 @@ function MetaTab({ refreshKey }: { refreshKey: number }) {
       />
       <div>
         <h3 className="mb-2 text-sm font-medium">Meta actual</h3>
-        <GoalForm key={goalKey} />
+        <CurrentGoalPanel key={goalKey} />
       </div>
     </div>
   );

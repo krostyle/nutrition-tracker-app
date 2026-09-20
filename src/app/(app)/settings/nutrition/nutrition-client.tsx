@@ -106,17 +106,24 @@ function CurrentGoalPanel() {
   );
 }
 
+type GoalValues = { calories: number; protein: number; carbs: number; fat: number };
+
 function RecommendationPanel({ onApplied }: { onApplied: () => void }) {
   const [result, setResult] = useState<RecommendationResult | null>(null);
+  const [currentGoal, setCurrentGoal] = useState<GoalValues | null>(null);
+  const [goalLoaded, setGoalLoaded] = useState(false);
   const [pending, startTransition] = useTransition();
-  const [applied, setApplied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getRecommendationAction().then(setResult);
+    getGoalAction().then((g) => {
+      setCurrentGoal(g ? { calories: g.calories, protein: g.protein, carbs: g.carbs, fat: g.fat } : null);
+      setGoalLoaded(true);
+    });
   }, []);
 
-  if (!result) {
+  if (!result || !goalLoaded) {
     return <Skeleton className="h-32 w-full" />;
   }
 
@@ -141,18 +148,25 @@ function RecommendationPanel({ onApplied }: { onApplied: () => void }) {
   }
 
   const r = result.recommendation;
+  const recommended: GoalValues = {
+    calories: round(r.calories),
+    protein: round(r.protein),
+    carbs: round(r.carbs),
+    fat: round(r.fat),
+  };
+  const alreadyApplied =
+    currentGoal !== null &&
+    currentGoal.calories === recommended.calories &&
+    currentGoal.protein === recommended.protein &&
+    currentGoal.carbs === recommended.carbs &&
+    currentGoal.fat === recommended.fat;
 
   function apply() {
     setError(null);
     startTransition(async () => {
-      const outcome = await applyRecommendationAsGoalAction({
-        calories: round(r.calories),
-        protein: round(r.protein),
-        carbs: round(r.carbs),
-        fat: round(r.fat),
-      });
+      const outcome = await applyRecommendationAsGoalAction(recommended);
       if (outcome.ok) {
-        setApplied(true);
+        setCurrentGoal(recommended);
         onApplied();
       } else {
         setError(outcome.message);
@@ -173,24 +187,28 @@ function RecommendationPanel({ onApplied }: { onApplied: () => void }) {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div>
             <p className="text-xs text-muted-foreground">Calorías</p>
-            <p className="text-sm font-medium">{round(r.calories)} kcal</p>
+            <p className="text-sm font-medium">{recommended.calories} kcal</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Proteína</p>
-            <p className="text-sm font-medium">{round(r.protein)} g</p>
+            <p className="text-sm font-medium">{recommended.protein} g</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Carbohidratos</p>
-            <p className="text-sm font-medium">{round(r.carbs)} g</p>
+            <p className="text-sm font-medium">{recommended.carbs} g</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Grasa</p>
-            <p className="text-sm font-medium">{round(r.fat)} g</p>
+            <p className="text-sm font-medium">{recommended.fat} g</p>
           </div>
         </div>
-        <Button size="sm" disabled={pending} onClick={apply}>
-          {pending ? "Aplicando..." : applied ? "Aplicada" : "Aplicar como meta"}
-        </Button>
+        {alreadyApplied ? (
+          <p className="text-sm text-muted-foreground">Esta es tu meta actual.</p>
+        ) : (
+          <Button size="sm" disabled={pending} onClick={apply}>
+            {pending ? "Aplicando..." : "Aplicar como meta"}
+          </Button>
+        )}
         {error && <p className="text-sm text-destructive">{error}</p>}
       </CardContent>
     </Card>

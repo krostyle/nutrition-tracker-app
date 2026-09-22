@@ -79,14 +79,20 @@ const MACRO_TOTAL_ROWS = [
 function DayTotals({ dateKey, summary }: { dateKey: string; summary: DaySummary }) {
   const caloriesConsumed = round(summary.totals.calories);
   const caloriesGoal = summary.goal?.calories;
-  const caloriesPct = caloriesGoal ? Math.max(0, Math.min(100, (caloriesConsumed / caloriesGoal) * 100)) : 0;
+  const caloriesOver = caloriesGoal !== undefined && caloriesConsumed > caloriesGoal;
+  const caloriesPct = caloriesGoal ? Math.min(100, (caloriesConsumed / caloriesGoal) * 100) : 0;
 
   return (
     <div className="flex flex-col gap-4">
       <div>
         <p className="text-sm text-muted-foreground">{formatDateKeyLong(dateKey)}</p>
         <div className="flex items-baseline gap-1.5">
-          <span className="text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl">
+          <span
+            className={cn(
+              "text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl",
+              caloriesOver && "text-destructive",
+            )}
+          >
             {caloriesConsumed}
           </span>
           <span className="text-sm text-muted-foreground">
@@ -96,7 +102,10 @@ function DayTotals({ dateKey, summary }: { dateKey: string; summary: DaySummary 
         {caloriesGoal !== undefined && (
           <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-primary transition-all"
+              className={cn(
+                "h-full rounded-full transition-all",
+                caloriesOver ? "bg-destructive" : "bg-primary",
+              )}
               style={{ width: `${caloriesPct}%` }}
             />
           </div>
@@ -116,18 +125,27 @@ function DayTotals({ dateKey, summary }: { dateKey: string; summary: DaySummary 
           const segment = MACRO_PERCENT_SEGMENTS.find((s) => s.key === key)!;
           const consumed = round(summary.totals[key]);
           const goal = summary.goal?.[key];
-          const pct = goal ? Math.max(0, Math.min(100, (consumed / goal) * 100)) : 0;
+          const isOver = goal !== undefined && consumed > goal;
+          const pct = goal ? Math.min(100, (consumed / goal) * 100) : 0;
           return (
             <div key={key} className="flex min-w-0 flex-col gap-1">
               <span className="truncate text-xs text-muted-foreground">{label}</span>
-              <span className={cn("text-sm font-semibold tabular-nums", segment.textClass)}>
+              <span
+                className={cn(
+                  "text-sm font-semibold tabular-nums",
+                  isOver ? "text-destructive" : segment.textClass,
+                )}
+              >
                 {consumed}
                 {goal !== undefined ? `/${goal}` : ""} g
               </span>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                 {goal !== undefined && (
                   <div
-                    className={cn("h-full rounded-full transition-all", segment.barClass)}
+                    className={cn(
+                      "h-full rounded-full transition-all",
+                      isOver ? "bg-destructive" : segment.barClass,
+                    )}
                     style={{ width: `${pct}%` }}
                   />
                 )}

@@ -589,7 +589,7 @@ export function NutritionClient() {
   }
 
   return (
-    <Card className="w-full max-w-lg">
+    <Card className="w-full max-w-lg rounded-none bg-transparent p-0 ring-0 sm:rounded-xl sm:bg-card sm:py-(--card-spacing) sm:ring-1 sm:ring-foreground/10">
       <CardHeader>
         <CardTitle>Nutrición</CardTitle>
         <CardDescription>

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ChevronRight, Target, User } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 
 const SETTINGS_SECTIONS = [
   {
@@ -22,10 +21,10 @@ export default function SettingsPage() {
     <div className="flex flex-1 flex-col items-center gap-6 p-4 sm:p-8">
       <div className="flex w-full max-w-lg flex-col gap-3">
         <h1 className="text-lg font-semibold">Configuración</h1>
-        {SETTINGS_SECTIONS.map(({ href, icon: Icon, title, description }) => (
-          <Link key={href} href={href}>
-            <Card className="transition-colors hover:bg-muted/40">
-              <CardContent className="flex items-center gap-3">
+        <div className="flex flex-col divide-y divide-border overflow-hidden rounded-xl border sm:divide-y-0 sm:gap-3 sm:overflow-visible sm:rounded-none sm:border-none">
+          {SETTINGS_SECTIONS.map(({ href, icon: Icon, title, description }) => (
+            <Link key={href} href={href}>
+              <div className="flex items-center gap-3 p-3 transition-colors hover:bg-muted/40 sm:rounded-xl sm:border sm:bg-card sm:p-4 sm:shadow-sm">
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
                   <Icon className="size-4.5" />
                 </span>
@@ -34,10 +33,10 @@ export default function SettingsPage() {
                   <p className="text-xs text-muted-foreground">{description}</p>
                 </div>
                 <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );

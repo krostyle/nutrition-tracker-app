@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MACRO_PERCENT_SEGMENTS } from "../../foods/nutrition-facts";
+import { MacroHero, type MacroHeroValues } from "../../foods/nutrition-facts";
 import {
   Dialog,
   DialogContent,
@@ -41,34 +41,7 @@ function round(n: number) {
   return Math.round(n * 10) / 10;
 }
 
-type GoalValues = { calories: number; protein: number; carbs: number; fat: number };
-
-// Calorías por delante como cifra principal; los macros van debajo como filas
-// con el mismo color por macro que ya se usa en el detalle de un alimento.
-function GoalMetrics({ calories, protein, carbs, fat }: GoalValues) {
-  const values = { protein, carbs, fat };
-  return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <p className="text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl">
-          {Math.round(calories)}
-        </p>
-        <p className="text-sm text-muted-foreground">kcal al día</p>
-      </div>
-      <div className="flex flex-col divide-y divide-border/70">
-        {MACRO_PERCENT_SEGMENTS.map(({ key, label, barClass, textClass }) => (
-          <div key={key} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-            <span className={cn("h-7 w-1 shrink-0 rounded-full", barClass)} />
-            <span className="flex-1 text-sm text-muted-foreground">{label}</span>
-            <span className={cn("text-base font-semibold tabular-nums", textClass)}>
-              {Math.round(values[key])} g
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+type GoalValues = MacroHeroValues;
 
 function CurrentGoalPanel() {
   const [goal, setGoal] = useState<Goal | null>(null);
@@ -104,7 +77,8 @@ function CurrentGoalPanel() {
   }
 
   return (
-    <GoalMetrics
+    <MacroHero
+      caption="kcal al día"
       calories={round(goal.calories)}
       protein={round(goal.protein)}
       carbs={round(goal.carbs)}
@@ -182,7 +156,7 @@ function RecommendationTab({ onApplied }: { onApplied: () => void }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 sm:rounded-xl sm:border sm:bg-card sm:p-5 sm:shadow-sm">
-        <GoalMetrics {...recommended} />
+        <MacroHero caption="kcal al día" {...recommended} />
         <p className="text-sm text-muted-foreground">
           {round(r.bmr)} kcal en reposo (BMR) · {round(r.tdee)} kcal con tu actividad (TDEE) ·{" "}
           {round(r.bodyFatPercent)}% de grasa corporal estimada

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Beef, Candy, ChevronDown, ChevronUp, Droplet, Droplets, Flame, Leaf, Wheat } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 export const MACROS = [
   { key: "calories", label: "Calorías", short: "Cal.", unit: "kcal", icon: Flame },
@@ -91,6 +92,38 @@ export function MacroPercentBar({ values }: { values: NutrientValues }) {
           <span key={key} className={`font-medium ${textClass}`}>
             {label} {percentages[key]}%
           </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export type MacroHeroValues = { calories: number; protein: number; carbs: number; fat: number };
+
+// Calorías como cifra protagonista, macros debajo como filas con el mismo
+// color por macro que se usa en toda la app (proteína azul, carbohidratos
+// ámbar, grasa violeta). Se usa donde no hay una meta contra la cual
+// comparar (recomendación, receta) — para progreso vs. meta, ver el
+// dashboard, que además dibuja una barra por fila.
+export function MacroHero({ calories, protein, carbs, fat, caption }: MacroHeroValues & { caption: string }) {
+  const values = { protein, carbs, fat };
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <p className="text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl">
+          {Math.round(calories)}
+        </p>
+        <p className="text-sm text-muted-foreground">{caption}</p>
+      </div>
+      <div className="flex flex-col divide-y divide-border/70">
+        {MACRO_PERCENT_SEGMENTS.map(({ key, label, barClass, textClass }) => (
+          <div key={key} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+            <span className={cn("h-7 w-1 shrink-0 rounded-full", barClass)} />
+            <span className="flex-1 text-sm text-muted-foreground">{label}</span>
+            <span className={cn("text-base font-semibold tabular-nums", textClass)}>
+              {Math.round(values[key])} g
+            </span>
+          </div>
         ))}
       </div>
     </div>

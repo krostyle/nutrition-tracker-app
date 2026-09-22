@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -135,7 +136,7 @@ export function RecipeForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex max-w-sm flex-col gap-5">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="recipe-name">Nombre</Label>
         <Input id="recipe-name" value={name} onChange={(e) => setName(e.target.value)} />
@@ -155,38 +156,42 @@ export function RecipeForm({
 
       <div className="flex flex-col gap-2">
         <Label>Ingredientes</Label>
-        {ingredients.length === 0 && (
+        {ingredients.length === 0 ? (
           <p className="text-sm text-muted-foreground">Todavía no agregaste ingredientes.</p>
-        )}
-        {ingredients.map((row, index) => (
-          <div key={`${row.foodId}-${index}`} className="flex items-center gap-2">
-            <span className="min-w-0 flex-1 truncate text-sm">{row.foodName}</span>
-            <div className="flex shrink-0 items-center gap-2">
-              <Input
-                className="w-20"
-                type="number"
-                step="any"
-                value={row.grams}
-                onChange={(e) => updateGrams(index, e.target.value)}
-              />
-              <span className="text-xs text-muted-foreground">g</span>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => removeIngredient(index)}
-              >
-                Quitar
-              </Button>
-            </div>
+        ) : (
+          <div className="flex flex-col divide-y divide-border rounded-lg border">
+            {ingredients.map((row, index) => (
+              <div key={`${row.foodId}-${index}`} className="flex items-center gap-2 px-3 py-2">
+                <span className="min-w-0 flex-1 truncate text-sm">{row.foodName}</span>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <Input
+                    className="w-16"
+                    type="number"
+                    step="any"
+                    value={row.grams}
+                    onChange={(e) => updateGrams(index, e.target.value)}
+                  />
+                  <span className="text-xs text-muted-foreground">g</span>
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    aria-label={`Quitar ${row.foodName}`}
+                    onClick={() => removeIngredient(index)}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
         <IngredientPicker onAdd={addIngredient} />
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <Button type="submit" disabled={!canSubmit || pending}>
+      <Button type="submit" disabled={!canSubmit || pending} className="mt-1">
         {pending ? "Guardando..." : submitLabel}
       </Button>
     </form>

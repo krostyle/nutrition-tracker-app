@@ -67,7 +67,7 @@ export function macroPercentages(values: NutrientValues): MacroPercentages | nul
   };
 }
 
-const MACRO_PERCENT_SEGMENTS = [
+export const MACRO_PERCENT_SEGMENTS = [
   { key: "protein", label: "Proteína", barClass: "bg-blue-500", textClass: "text-blue-600 dark:text-blue-400" },
   { key: "carbs", label: "Carbohidratos", barClass: "bg-amber-500", textClass: "text-amber-600 dark:text-amber-400" },
   { key: "fat", label: "Grasa", barClass: "bg-violet-500", textClass: "text-violet-600 dark:text-violet-400" },

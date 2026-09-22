@@ -2,18 +2,12 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MACRO_PERCENT_SEGMENTS } from "./foods/nutrition-facts";
 import {
   deleteLogEntryAction,
   getDaySummaryAction,
@@ -21,7 +15,13 @@ import {
   type DaySummary,
   type LogEntryDisplay,
 } from "@/lib/nutrition/actions";
-import { getWeekDates, getWeekStartKey, shiftDateKey, todayDateKey } from "@/lib/nutrition/date";
+import {
+  getWeekDates,
+  getWeekStartKey,
+  parseDateKey,
+  shiftDateKey,
+  todayDateKey,
+} from "@/lib/nutrition/date";
 import type { MealType } from "@/generated/prisma/client";
 import { MealFoodPicker } from "./meal-food-picker";
 
@@ -35,38 +35,105 @@ const MEAL_LABELS: Record<MealType, string> = {
 };
 
 const WEEKDAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
+const WEEKDAY_FULL_LABELS = [
+  "domingo",
+  "lunes",
+  "martes",
+  "miércoles",
+  "jueves",
+  "viernes",
+  "sábado",
+];
+const MONTH_LABELS = [
+  "enero",
+  "febrero",
+  "marzo",
+  "abril",
+  "mayo",
+  "junio",
+  "julio",
+  "agosto",
+  "septiembre",
+  "octubre",
+  "noviembre",
+  "diciembre",
+];
+
+function formatDateKeyLong(dateKey: string): string {
+  const date = parseDateKey(dateKey);
+  const weekday = WEEKDAY_FULL_LABELS[date.getUTCDay()];
+  return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)} ${date.getUTCDate()} de ${MONTH_LABELS[date.getUTCMonth()]}`;
+}
 
 function round(n: number) {
   return Math.round(n * 10) / 10;
 }
 
-function NutrientBar({
-  label,
-  unit,
-  consumed,
-  goal,
-}: {
-  label: string;
-  unit: string;
-  consumed: number;
-  goal?: number;
-}) {
-  const pct = goal ? Math.max(0, Math.min(100, (consumed / goal) * 100)) : 0;
+const MACRO_TOTAL_ROWS = [
+  { key: "protein", label: "Proteína" },
+  { key: "carbs", label: "Carbohidratos" },
+  { key: "fat", label: "Grasa" },
+] as const;
+
+function DayTotals({ dateKey, summary }: { dateKey: string; summary: DaySummary }) {
+  const caloriesConsumed = round(summary.totals.calories);
+  const caloriesGoal = summary.goal?.calories;
+  const caloriesPct = caloriesGoal ? Math.max(0, Math.min(100, (caloriesConsumed / caloriesGoal) * 100)) : 0;
 
   return (
-    <div className="flex min-w-0 flex-col gap-1">
-      <span className="truncate text-xs text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium whitespace-nowrap">
-        {consumed}
-        {goal !== undefined ? ` / ${goal}` : ""} {unit}
-      </span>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-        {goal !== undefined && (
-          <div
-            className="h-full rounded-full bg-primary transition-all"
-            style={{ width: `${pct}%` }}
-          />
+    <div className="flex flex-col gap-4">
+      <div>
+        <p className="text-sm text-muted-foreground">{formatDateKeyLong(dateKey)}</p>
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl">
+            {caloriesConsumed}
+          </span>
+          <span className="text-sm text-muted-foreground">
+            {caloriesGoal !== undefined ? `/ ${caloriesGoal} kcal` : "kcal hoy"}
+          </span>
+        </div>
+        {caloriesGoal !== undefined && (
+          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${caloriesPct}%` }}
+            />
+          </div>
         )}
+        {!summary.goal && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            Todavía no definiste una meta.{" "}
+            <Link href="/settings/nutrition" className="underline">
+              Definirla
+            </Link>
+          </p>
+        )}
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        {MACRO_TOTAL_ROWS.map(({ key, label }) => {
+          const segment = MACRO_PERCENT_SEGMENTS.find((s) => s.key === key)!;
+          const consumed = round(summary.totals[key]);
+          const goal = summary.goal?.[key];
+          const pct = goal ? Math.max(0, Math.min(100, (consumed / goal) * 100)) : 0;
+          return (
+            <div key={key} className="flex min-w-0 flex-col gap-1">
+              <span className="truncate text-xs text-muted-foreground">{label}</span>
+              <span className={cn("text-sm font-semibold tabular-nums", segment.textClass)}>
+                {consumed}
+                {goal !== undefined ? `/${goal}` : ""} g
+              </span>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                {goal !== undefined && (
+                  <div
+                    className={cn("h-full rounded-full transition-all", segment.barClass)}
+                    style={{ width: `${pct}%` }}
+                  />
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -118,7 +185,7 @@ function EntryRow({
   }
 
   return (
-    <div className="flex flex-col gap-1 border-b py-2 last:border-b-0">
+    <div className="flex flex-col gap-1 py-2.5 first:pt-0 last:pb-0">
       <div className="flex items-center justify-between gap-2 text-sm">
         <div className="min-w-0 flex-1">
           <p className="truncate">{name}</p>
@@ -139,18 +206,29 @@ function EntryRow({
             )}
           </p>
         </div>
-        <div className="flex shrink-0 gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {editing ? (
             <Button size="sm" variant="outline" disabled={pending} onClick={save}>
               Guardar
             </Button>
           ) : (
-            <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
-              Editar
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              aria-label={`Editar ${name}`}
+              onClick={() => setEditing(true)}
+            >
+              <Pencil className="size-3.5" />
             </Button>
           )}
-          <Button size="sm" variant="outline" disabled={pending} onClick={remove}>
-            Eliminar
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            aria-label={`Eliminar ${name}`}
+            disabled={pending}
+            onClick={remove}
+          >
+            <Trash2 className="size-3.5" />
           </Button>
         </div>
       </div>
@@ -221,37 +299,32 @@ function WeekStrip({
 
 function DashboardSkeleton() {
   return (
-    <div className="flex w-full max-w-2xl flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-7 w-24" />
-        <Skeleton className="h-5 w-24" />
-        <Skeleton className="h-7 w-24" />
+    <div className="flex w-full max-w-2xl flex-col gap-8">
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
+        <Skeleton className="h-8 flex-1 rounded-lg" />
+        <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
       </div>
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-5 w-32" />
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex flex-col gap-1.5">
-                <Skeleton className="h-3 w-16" />
-                <Skeleton className="h-4 w-12" />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-      {Array.from({ length: 4 }).map((_, i) => (
-        <Card key={i}>
-          <CardHeader>
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-3 w-32" />
+        <Skeleton className="h-11 w-40" />
+        <div className="grid grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex flex-col gap-1.5">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-4 w-12" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="flex flex-col gap-5">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex flex-col gap-2">
             <Skeleton className="h-5 w-24" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-4 w-32" />
-          </CardContent>
-        </Card>
-      ))}
+            <Skeleton className="h-4 w-40" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -293,79 +366,37 @@ export function DashboardClient() {
         onShiftWeek={(weeks) => setDateKey((d) => shiftDateKey(d, weeks * 7))}
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Totales del día</CardTitle>
-          <CardDescription>
-            {dateKey}
-            {!summary?.goal && (
-              <>
-                {" · "}Todavía no definiste una meta.{" "}
-                <Link href="/settings/nutrition" className="underline">
-                  Definirla
-                </Link>
-              </>
-            )}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {summary && (
-            <div className="flex flex-col gap-3">
-              <NutrientBar
-                label="Calorías"
-                unit="kcal"
-                consumed={round(summary.totals.calories)}
-                goal={summary.goal?.calories}
-              />
-              <div className="grid grid-cols-3 gap-3">
-                <NutrientBar
-                  label="Proteína"
-                  unit="g"
-                  consumed={round(summary.totals.protein)}
-                  goal={summary.goal?.protein}
-                />
-                <NutrientBar
-                  label="Carbohidratos"
-                  unit="g"
-                  consumed={round(summary.totals.carbs)}
-                  goal={summary.goal?.carbs}
-                />
-                <NutrientBar
-                  label="Grasa"
-                  unit="g"
-                  consumed={round(summary.totals.fat)}
-                  goal={summary.goal?.fat}
-                />
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <DayTotals dateKey={dateKey} summary={summary} />
 
-      {MEAL_TYPES.map((mealType) => (
-        <Card key={mealType}>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">{MEAL_LABELS[mealType]}</CardTitle>
-            <Button
-              size="icon-sm"
-              variant="outline"
-              aria-label={`Agregar a ${MEAL_LABELS[mealType]}`}
-              onClick={() => setOpenMealType(mealType)}
-            >
-              <Plus className="size-4" />
-            </Button>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2">
-            {summary?.entriesByMeal[mealType].length ? (
-              summary.entriesByMeal[mealType].map((entry) => (
-                <EntryRow key={entry.id} entry={entry} onChanged={refreshDay} />
-              ))
+      <div className="flex flex-col divide-y divide-border sm:rounded-xl sm:border sm:bg-card sm:shadow-sm">
+        {MEAL_TYPES.map((mealType) => (
+          <div
+            key={mealType}
+            className="flex flex-col gap-2 py-5 first:pt-0 last:pb-0 sm:px-6 sm:py-5 sm:first:pt-5 sm:last:pb-5"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium">{MEAL_LABELS[mealType]}</h3>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                aria-label={`Agregar a ${MEAL_LABELS[mealType]}`}
+                onClick={() => setOpenMealType(mealType)}
+              >
+                <Plus className="size-4" />
+              </Button>
+            </div>
+            {summary.entriesByMeal[mealType].length ? (
+              <div className="flex flex-col divide-y divide-border">
+                {summary.entriesByMeal[mealType].map((entry) => (
+                  <EntryRow key={entry.id} entry={entry} onChanged={refreshDay} />
+                ))}
+              </div>
             ) : (
               <p className="text-sm text-muted-foreground">Sin entradas.</p>
             )}
-          </CardContent>
-        </Card>
-      ))}
+          </div>
+        ))}
+      </div>
 
       {openMealType && (
         <MealFoodPicker

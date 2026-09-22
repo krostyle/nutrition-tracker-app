@@ -4,6 +4,7 @@ import type { BodyMeasurement, Goal, Profile } from "@/generated/prisma/client";
 import { runAction, type ActionResult } from "@/lib/action-result";
 import { createMeasurement, getLatestMeasurement, listMeasurements, type CreateMeasurementInput } from "./body-measurements";
 import { saveGoal, type GoalInput } from "./goal";
+import { calculateAge } from "./age";
 import { getProfile, saveProfile, type ProfileInput } from "./profile";
 import { calculateRecommendation, type Recommendation } from "./recommendation";
 
@@ -53,7 +54,7 @@ export async function getRecommendationAction(): Promise<RecommendationResult> {
 
   const recommendation = calculateRecommendation({
     sex: profile.sex,
-    age: profile.age,
+    age: calculateAge(profile.birthDate),
     heightCm: profile.heightCm,
     activityLevel: profile.activityLevel,
     goalType: profile.goalType,

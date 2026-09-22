@@ -9,7 +9,7 @@ export async function getProfile(): Promise<Profile | null> {
 
 export type ProfileInput = {
   sex: Sex;
-  age: number;
+  birthDate: Date;
   heightCm: number;
   activityLevel: ActivityLevel;
   goalType: GoalType;

@@ -15,13 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -252,11 +246,11 @@ function RecommendationTab({ onApplied }: { onApplied: () => void }) {
   );
 }
 
-const GOAL_TYPE_LABELS: Record<GoalType, string> = {
-  LOSE_FAT: "Bajar grasa",
-  MAINTAIN: "Mantener",
-  GAIN_MUSCLE: "Subir músculo",
-};
+const GOAL_TYPE_OPTIONS = [
+  { value: "LOSE_FAT", label: "Bajar grasa" },
+  { value: "MAINTAIN", label: "Mantener" },
+  { value: "GAIN_MUSCLE", label: "Subir músculo" },
+] as const satisfies { value: GoalType; label: string }[];
 
 function ObjectiveTab({
   profile,
@@ -280,7 +274,7 @@ function ObjectiveTab({
     startTransition(async () => {
       const outcome = await saveProfileAction({
         sex: profile.sex,
-        age: profile.age,
+        birthDate: profile.birthDate,
         heightCm: profile.heightCm,
         activityLevel: profile.activityLevel,
         goalType,
@@ -313,25 +307,14 @@ function ObjectiveTab({
 
       <div className="flex flex-col gap-1.5">
         <Label>Objetivo</Label>
-        <Select
-          items={GOAL_TYPE_LABELS}
+        <SegmentedToggle
+          options={GOAL_TYPE_OPTIONS}
           value={goalType}
-          onValueChange={(v) => {
-            setGoalType(v as GoalType);
+          onChange={(v) => {
+            setGoalType(v);
             setSaved(false);
           }}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(GOAL_TYPE_LABELS).map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        />
       </div>
 
       <div className="flex flex-col gap-1.5">

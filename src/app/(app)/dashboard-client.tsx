@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MACRO_PERCENT_SEGMENTS } from "./foods/nutrition-facts";
 import {
@@ -139,6 +140,8 @@ function DayTotals({ dateKey, summary }: { dateKey: string; summary: DaySummary 
   );
 }
 
+type QuantityUnit = "grams" | "serving";
+
 function EntryRow({
   entry,
   onChanged,
@@ -148,21 +151,41 @@ function EntryRow({
 }) {
   const isRecipe = Boolean(entry.recipe);
   const name = entry.food?.name ?? entry.recipe?.name ?? "";
-  const unit = isRecipe ? "porciones" : "g";
+  const displayUnit = isRecipe ? "porciones" : "g";
+  const servingSize = entry.food?.servingSize ?? undefined;
+  const servingLabel = entry.food?.servingLabel ?? undefined;
+  const hasServing = !isRecipe && servingSize !== undefined;
 
   const [editing, setEditing] = useState(false);
+  const [unit, setUnit] = useState<QuantityUnit>("grams");
   const [quantity, setQuantity] = useState(String(entry.quantity));
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   const calories = round(entry.calories);
 
+  function startEditing() {
+    setUnit("grams");
+    setQuantity(String(entry.quantity));
+    setEditing(true);
+  }
+
+  function handleUnitChange(next: QuantityUnit) {
+    setUnit(next);
+    if (next === "serving" && servingSize) {
+      setQuantity(String(round(entry.quantity / servingSize)));
+    } else {
+      setQuantity(String(entry.quantity));
+    }
+  }
+
   function save() {
     const value = Number(quantity);
     if (!value || value <= 0) return;
+    const grams = !isRecipe && unit === "serving" ? value * (servingSize ?? 0) : value;
     setError(null);
     startTransition(async () => {
-      const outcome = await updateLogEntryQuantityAction(entry.id, value);
+      const outcome = await updateLogEntryQuantityAction(entry.id, grams);
       if (outcome.ok) {
         setEditing(false);
         onChanged();
@@ -185,26 +208,15 @@ function EntryRow({
   }
 
   return (
-    <div className="flex flex-col gap-1 py-2.5 first:pt-0 last:pb-0">
+    <div className="flex flex-col gap-1.5 py-2.5 first:pt-0 last:pb-0">
       <div className="flex items-center justify-between gap-2 text-sm">
         <div className="min-w-0 flex-1">
           <p className="truncate">{name}</p>
-          <p className="text-muted-foreground">
-            {editing ? (
-              <span className="inline-flex items-center gap-1">
-                <Input
-                  className="h-6 w-20"
-                  type="number"
-                  step="any"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                />
-                {unit}
-              </span>
-            ) : (
-              `${entry.quantity} ${unit} · ${calories} kcal`
-            )}
-          </p>
+          {!editing && (
+            <p className="text-muted-foreground">
+              {entry.quantity} {displayUnit} · {calories} kcal
+            </p>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {editing ? (
@@ -216,7 +228,7 @@ function EntryRow({
               size="icon-sm"
               variant="ghost"
               aria-label={`Editar ${name}`}
-              onClick={() => setEditing(true)}
+              onClick={startEditing}
             >
               <Pencil className="size-3.5" />
             </Button>
@@ -232,6 +244,31 @@ function EntryRow({
           </Button>
         </div>
       </div>
+      {editing && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            className="h-7 w-20"
+            type="number"
+            step="any"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+          />
+          {isRecipe ? (
+            <span className="text-xs text-muted-foreground">porciones</span>
+          ) : hasServing ? (
+            <SegmentedToggle
+              options={[
+                { value: "grams", label: "gramos" },
+                { value: "serving", label: servingLabel ?? "porción" },
+              ]}
+              value={unit}
+              onChange={handleUnitChange}
+            />
+          ) : (
+            <span className="text-xs text-muted-foreground">g</span>
+          )}
+        </div>
+      )}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );

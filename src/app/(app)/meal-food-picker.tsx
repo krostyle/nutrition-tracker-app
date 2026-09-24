@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { Barcode, Bookmark, ChefHat, Search, SquarePen } from "lucide-react";
+import { Barcode, ChefHat, Search, SquarePen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,12 +26,7 @@ import { addFoodToMealAction } from "@/lib/nutrition/actions";
 import { getRecipeDetailAction, listRecipesAction } from "@/lib/nutrition/recipe-actions";
 import type { Food, MealType, Recipe } from "@/generated/prisma/client";
 import { FoodNutritionDetail, type NutrientValues } from "./foods/nutrition-facts";
-import {
-  BarcodePickerTab,
-  ManualPickerTab,
-  SavedFoodsPickerTab,
-  SearchByNamePickerTab,
-} from "./food-picker-tabs";
+import { BarcodePickerTab, ManualPickerTab, UnifiedFoodPickerTab } from "./food-picker-tabs";
 
 type Candidate =
   | { kind: "existing"; foodId: string; food: Food }
@@ -257,10 +252,9 @@ export function MealFoodPicker({
             </Button>
           </div>
         ) : (
-          <Tabs defaultValue="saved">
+          <Tabs defaultValue="search">
             <div className="hidden sm:block">
               <TabsList className="w-full">
-                <TabsTrigger value="saved">Guardados</TabsTrigger>
                 <TabsTrigger value="search">Buscar</TabsTrigger>
                 <TabsTrigger value="barcode">Escanear</TabsTrigger>
                 <TabsTrigger value="recipes">Recetas</TabsTrigger>
@@ -268,11 +262,8 @@ export function MealFoodPicker({
               </TabsList>
             </div>
 
-            <TabsContent value="saved" className="pb-28 sm:pb-0">
-              <SavedFoodsPickerTab onSelect={setCandidate} onNavigate={() => handleOpenChange(false)} />
-            </TabsContent>
             <TabsContent value="search" className="pb-28 sm:pb-0">
-              <SearchByNamePickerTab onSelect={setCandidate} />
+              <UnifiedFoodPickerTab onSelect={setCandidate} onNavigate={() => handleOpenChange(false)} />
             </TabsContent>
             <TabsContent value="barcode" className="pb-28 sm:pb-0">
               <BarcodePickerTab onSelect={setCandidate} />
@@ -292,10 +283,6 @@ export function MealFoodPicker({
                     "w-full max-w-sm border border-border/50 bg-popover shadow-lg ring-1 ring-foreground/10",
                   )}
                 >
-                  <TabsTrigger value="saved" className={floatingTabTriggerClass}>
-                    <TabIconBadge tint="amber" icon={Bookmark} className="size-6" />
-                    <span className={floatingTabLabelClass}>Guardados</span>
-                  </TabsTrigger>
                   <TabsTrigger value="search" className={floatingTabTriggerClass}>
                     <TabIconBadge tint="blue" icon={Search} className="size-6" />
                     <span className={floatingTabLabelClass}>Buscar</span>

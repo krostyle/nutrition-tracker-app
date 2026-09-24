@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -219,7 +220,7 @@ function EntryRow({
   const servingLabel = entry.food?.servingLabel ?? undefined;
   const hasServing = !isRecipe && servingSize !== undefined;
 
-  const [editing, setEditing] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [unit, setUnit] = useState<QuantityUnit>("grams");
   const [quantity, setQuantity] = useState(String(entry.quantity));
   const [pending, startTransition] = useTransition();
@@ -233,13 +234,13 @@ function EntryRow({
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: entry.id,
     data: { mealType },
-    disabled: editing,
   });
 
-  function startEditing() {
+  function openDialog() {
     setUnit("grams");
     setQuantity(String(entry.quantity));
-    setEditing(true);
+    setError(null);
+    setDialogOpen(true);
   }
 
   function handleUnitChange(next: QuantityUnit) {
@@ -259,7 +260,7 @@ function EntryRow({
     startTransition(async () => {
       const outcome = await updateLogEntryQuantityAction(entry.id, grams);
       if (outcome.ok) {
-        setEditing(false);
+        setDialogOpen(false);
         onChanged();
       } else {
         setError(outcome.message);
@@ -272,6 +273,7 @@ function EntryRow({
     startTransition(async () => {
       const outcome = await deleteLogEntryAction(entry.id);
       if (outcome.ok) {
+        setDialogOpen(false);
         onChanged();
       } else {
         setSwipeX(0);
@@ -282,15 +284,13 @@ function EntryRow({
 
   function handlePointerDown(e: React.PointerEvent) {
     movedRef.current = false;
-    if (!editing) {
-      trackRef.current = {
-        pointerId: e.pointerId,
-        startX: e.clientX,
-        startY: e.clientY,
-        isTouch: e.pointerType === "touch",
-        swiping: false,
-      };
-    }
+    trackRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      isTouch: e.pointerType === "touch",
+      swiping: false,
+    };
   }
 
   function handlePointerMove(e: React.PointerEvent) {
@@ -336,102 +336,85 @@ function EntryRow({
   }
 
   function handleClick() {
-    if (editing || movedRef.current) {
+    if (movedRef.current) {
       movedRef.current = false;
       return;
     }
-    startEditing();
+    openDialog();
   }
 
   return (
-    <div className="group relative overflow-hidden">
-      <div className="absolute inset-0 z-0 flex items-center justify-end bg-destructive px-4 text-destructive-foreground">
-        <Trash2 className="size-4" />
+    <>
+      <div className="group relative overflow-hidden">
+        <div className="absolute inset-0 z-0 flex items-center justify-end bg-destructive px-4 text-destructive-foreground">
+          <Trash2 className="size-4" />
+        </div>
+        <div
+          ref={setNodeRef}
+          {...attributes}
+          role={undefined}
+          {...listeners}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
+          onClick={handleClick}
+          style={swipeX ? { transform: `translateX(${swipeX}px)` } : undefined}
+          className={cn(
+            "relative z-10 flex cursor-pointer touch-none items-start gap-1 bg-card py-2.5 select-none group-first:pt-0 group-last:pb-0",
+            isDragging && "opacity-40",
+          )}
+        >
+          <div className="min-w-0 flex-1 text-sm">
+            <p className="truncate">{name}</p>
+            <p className="text-muted-foreground">
+              {entry.quantity} {displayUnit} · {calories} kcal
+            </p>
+          </div>
+        </div>
       </div>
-      <div
-        ref={setNodeRef}
-        {...attributes}
-        role={undefined}
-        {...listeners}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerCancel}
-        onClick={handleClick}
-        style={swipeX ? { transform: `translateX(${swipeX}px)` } : undefined}
-        className={cn(
-          "relative z-10 flex touch-none items-start gap-1 bg-card py-2.5 select-none group-first:pt-0 group-last:pb-0",
-          !editing && "cursor-pointer",
-          isDragging && "opacity-40",
-        )}
-      >
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <div className="flex items-center justify-between gap-2 text-sm">
-            <div className="min-w-0 flex-1">
-              <p className="truncate">{name}</p>
-              {!editing && (
-                <p className="text-muted-foreground">
-                  {entry.quantity} {displayUnit} · {calories} kcal
-                </p>
-              )}
-            </div>
-            {editing && (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={pending}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  save();
-                }}
-              >
-                Guardar
-              </Button>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{name}</DialogTitle>
+          </DialogHeader>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              className="h-9 w-24"
+              type="number"
+              step="any"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+            />
+            {isRecipe ? (
+              <span className="text-sm text-muted-foreground">porciones</span>
+            ) : hasServing ? (
+              <SegmentedToggle
+                options={[
+                  { value: "grams", label: "gramos" },
+                  { value: "serving", label: servingLabel ?? "porción" },
+                ]}
+                value={unit}
+                onChange={handleUnitChange}
+              />
+            ) : (
+              <span className="text-sm text-muted-foreground">g</span>
             )}
           </div>
-          {editing && (
-            <div className="flex flex-wrap items-center gap-2">
-              <Input
-                className="h-7 w-20"
-                type="number"
-                step="any"
-                value={quantity}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => setQuantity(e.target.value)}
-              />
-              {isRecipe ? (
-                <span className="text-xs text-muted-foreground">porciones</span>
-              ) : hasServing ? (
-                <SegmentedToggle
-                  options={[
-                    { value: "grams", label: "gramos" },
-                    { value: "serving", label: servingLabel ?? "porción" },
-                  ]}
-                  value={unit}
-                  onChange={handleUnitChange}
-                />
-              ) : (
-                <span className="text-xs text-muted-foreground">g</span>
-              )}
-            </div>
-          )}
-          {error && <p className="text-xs text-destructive">{error}</p>}
-        </div>
-        <Button
-          size="icon-sm"
-          variant="ghost"
-          aria-label={`Eliminar ${name}`}
-          disabled={pending}
-          onClick={(e) => {
-            e.stopPropagation();
-            remove();
-          }}
-          className="hidden shrink-0 sm:inline-flex"
-        >
-          <Trash2 className="size-3.5" />
-        </Button>
-      </div>
-    </div>
+          <div className="flex items-center justify-between gap-2 pt-2">
+            <Button variant="destructive" size="sm" disabled={pending} onClick={remove}>
+              <Trash2 className="size-4" />
+              Eliminar
+            </Button>
+            <Button size="sm" disabled={pending} onClick={save}>
+              {pending ? "Guardando..." : "Guardar"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -628,9 +611,25 @@ export function DashboardClient() {
     const fromMealType = active.data.current?.mealType as MealType | undefined;
     const toMealType = over.id as MealType;
     if (!fromMealType || fromMealType === toMealType) return;
+    const id = active.id as string;
+
+    setSummary((prev) => {
+      if (!prev) return prev;
+      const entry = prev.entriesByMeal[fromMealType].find((e) => e.id === id);
+      if (!entry) return prev;
+      return {
+        ...prev,
+        entriesByMeal: {
+          ...prev.entriesByMeal,
+          [fromMealType]: prev.entriesByMeal[fromMealType].filter((e) => e.id !== id),
+          [toMealType]: [...prev.entriesByMeal[toMealType], { ...entry, mealType: toMealType }],
+        },
+      };
+    });
+
     startTransition(async () => {
-      const outcome = await updateLogEntryMealTypeAction(active.id as string, toMealType);
-      if (outcome.ok) refreshDay();
+      const outcome = await updateLogEntryMealTypeAction(id, toMealType);
+      if (!outcome.ok) refreshDay();
     });
   }
 

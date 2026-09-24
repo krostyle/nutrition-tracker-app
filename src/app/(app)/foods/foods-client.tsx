@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Barcode, Bookmark, Camera, Search, SquarePen } from "lucide-react";
+import { Barcode, Camera, Search, SquarePen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BarcodeCameraScanner } from "@/components/barcode-camera-scanner";
 import { Button } from "@/components/ui/button";
@@ -163,120 +163,80 @@ function SearchResultsSkeleton() {
   );
 }
 
-function SearchTab() {
+function UnifiedFoodsTab() {
   const [query, setQuery] = useState("");
-  const [pending, startTransition] = useTransition();
-  const [results, setResults] = useState<SourceSearchResult | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [savedFoods, setSavedFoods] = useState<Food[] | null>(null);
+  const [offResults, setOffResults] = useState<SourceSearchResult | null>(null);
+  const [offPending, startOffTransition] = useTransition();
+  const localDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const offDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function runSearch(term: string) {
-    if (term.trim().length < MIN_QUERY_LENGTH) return;
-    startTransition(async () => {
-      const searchResults = await searchFoodsAction(term.trim());
-      setResults(searchResults);
+  function loadLocal(term: string) {
+    const trimmed = term.trim();
+    const promise = trimmed ? searchLocalFoodsAction(trimmed) : listFoodsAction();
+    promise.then(setSavedFoods);
+  }
+
+  function runOffSearch(term: string) {
+    startOffTransition(async () => {
+      const results = await searchFoodsAction(term.trim());
+      setOffResults(results);
     });
   }
 
+  useEffect(() => {
+    loadLocal("");
+  }, []);
+
   function handleChange(value: string) {
     setQuery(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (localDebounceRef.current) clearTimeout(localDebounceRef.current);
+    localDebounceRef.current = setTimeout(() => loadLocal(value), MY_FOODS_DEBOUNCE_MS);
+
+    if (offDebounceRef.current) clearTimeout(offDebounceRef.current);
     if (value.trim().length < MIN_QUERY_LENGTH) {
-      setResults(null);
+      setOffResults(null);
       return;
     }
-    debounceRef.current = setTimeout(() => runSearch(value), SEARCH_DEBOUNCE_MS);
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    runSearch(query);
+    offDebounceRef.current = setTimeout(() => runOffSearch(value), SEARCH_DEBOUNCE_MS);
   }
 
   useEffect(() => {
     return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, []);
-
-  const tooShort = query.trim().length > 0 && query.trim().length < MIN_QUERY_LENGTH;
-
-  return (
-    <div className="flex flex-col gap-4">
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <Input
-          placeholder="Nombre del alimento"
-          value={query}
-          onChange={(e) => handleChange(e.target.value)}
-        />
-        <Button type="submit" disabled={pending}>
-          {pending ? "Buscando..." : "Buscar"}
-        </Button>
-      </form>
-
-      {tooShort && (
-        <p className="text-sm text-muted-foreground">Escribe al menos 3 caracteres.</p>
-      )}
-
-      {!tooShort && pending && <SearchResultsSkeleton />}
-      {!tooShort && !pending && results && <MergedSearchResults results={results} />}
-    </div>
-  );
-}
-
-const MY_FOODS_DEBOUNCE_MS = 400;
-
-function MyFoodsTab() {
-  const [query, setQuery] = useState("");
-  const [foods, setFoods] = useState<Food[] | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function load(term: string) {
-    const trimmed = term.trim();
-    const promise =
-      trimmed.length >= MIN_QUERY_LENGTH ? searchLocalFoodsAction(trimmed) : listFoodsAction();
-    promise.then(setFoods);
-  }
-
-  useEffect(() => {
-    load("");
-  }, []);
-
-  function handleChange(value: string) {
-    setQuery(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => load(value), MY_FOODS_DEBOUNCE_MS);
-  }
-
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (localDebounceRef.current) clearTimeout(localDebounceRef.current);
+      if (offDebounceRef.current) clearTimeout(offDebounceRef.current);
     };
   }, []);
 
   return (
     <div className="flex flex-col gap-4">
       <Input
-        placeholder="Buscar en mis alimentos guardados..."
+        placeholder="Buscar alimentos..."
         value={query}
         onChange={(e) => handleChange(e.target.value)}
       />
-      {foods === null ? (
+      {savedFoods === null ? (
         <SearchResultsSkeleton />
-      ) : foods.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          {query.trim() ? "Sin resultados." : "Todavía no guardaste ningún alimento."}
-        </p>
       ) : (
         <div className="flex flex-col gap-3">
-          {foods.map((food) => (
+          {savedFoods.map((food) => (
             <SavedFoodCard key={food.id} food={food} />
           ))}
+          {offPending && <SearchResultsSkeleton />}
+          {!offPending && offResults && <MergedSearchResults results={offResults} />}
+          {!offPending && !offResults && savedFoods.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              {query.trim() ? "Sin resultados." : "Todavía no guardaste ningún alimento."}
+            </p>
+          )}
         </div>
       )}
     </div>
   );
 }
+
+const MY_FOODS_DEBOUNCE_MS = 400;
 
 const MANUAL_REQUIRED_FIELDS = ["calories", "protein", "carbs", "fat"] as const;
 const MANUAL_OPTIONAL_FIELDS = ["fiber", "sugar", "saturatedFat", "sodium"] as const;
@@ -422,10 +382,9 @@ export function FoodsClient() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="mine">
+        <Tabs defaultValue="search">
           <div className="hidden sm:block">
             <TabsList className="w-full">
-              <TabsTrigger value="mine">Guardados</TabsTrigger>
               <TabsTrigger value="search">Buscar</TabsTrigger>
               <TabsTrigger value="barcode">Escanear</TabsTrigger>
               <TabsTrigger value="manual">Manual</TabsTrigger>
@@ -439,10 +398,6 @@ export function FoodsClient() {
                 "w-full max-w-sm border border-border/50 bg-popover shadow-lg ring-1 ring-foreground/10",
               )}
             >
-              <TabsTrigger value="mine" className={floatingTabTriggerClass}>
-                <TabIconBadge tint="amber" icon={Bookmark} />
-                <span className={floatingTabLabelClass}>Guardados</span>
-              </TabsTrigger>
               <TabsTrigger value="search" className={floatingTabTriggerClass}>
                 <TabIconBadge tint="blue" icon={Search} />
                 <span className={floatingTabLabelClass}>Buscar</span>
@@ -458,11 +413,8 @@ export function FoodsClient() {
             </TabsList>
           </div>
 
-          <TabsContent value="mine" className="pb-28 sm:pb-0">
-            <MyFoodsTab />
-          </TabsContent>
           <TabsContent value="search" className="pb-28 sm:pb-0">
-            <SearchTab />
+            <UnifiedFoodsTab />
           </TabsContent>
           <TabsContent value="barcode" className="pb-28 sm:pb-0">
             <BarcodeTab />

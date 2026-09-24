@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { Barcode, Bookmark, Search, SquarePen } from "lucide-react";
+import { Barcode, Search, SquarePen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -24,8 +24,7 @@ import type { Food } from "@/generated/prisma/client";
 import {
   BarcodePickerTab,
   ManualPickerTab,
-  SavedFoodsPickerTab,
-  SearchByNamePickerTab,
+  UnifiedFoodPickerTab,
   type FoodPick,
 } from "../food-picker-tabs";
 
@@ -87,21 +86,17 @@ export function RecipeIngredientPicker({
         {error && <p className="text-sm text-destructive">{error}</p>}
         {pending && <p className="text-sm text-muted-foreground">Guardando...</p>}
 
-        <Tabs defaultValue="saved">
+        <Tabs defaultValue="search">
           <div className="hidden sm:block">
             <TabsList className="w-full">
-              <TabsTrigger value="saved">Guardados</TabsTrigger>
               <TabsTrigger value="search">Buscar</TabsTrigger>
               <TabsTrigger value="barcode">Escanear</TabsTrigger>
               <TabsTrigger value="manual">Manual</TabsTrigger>
             </TabsList>
           </div>
 
-          <TabsContent value="saved" className="pb-28 sm:pb-0">
-            <SavedFoodsPickerTab onSelect={handlePick} />
-          </TabsContent>
           <TabsContent value="search" className="pb-28 sm:pb-0">
-            <SearchByNamePickerTab onSelect={handlePick} />
+            <UnifiedFoodPickerTab onSelect={handlePick} />
           </TabsContent>
           <TabsContent value="barcode" className="pb-28 sm:pb-0">
             <BarcodePickerTab onSelect={handlePick} />
@@ -123,10 +118,6 @@ export function RecipeIngredientPicker({
                   "w-full max-w-sm border border-border/50 bg-popover shadow-lg ring-1 ring-foreground/10",
                 )}
               >
-                <TabsTrigger value="saved" className={floatingTabTriggerClass}>
-                  <TabIconBadge tint="amber" icon={Bookmark} className="size-6" />
-                  <span className={floatingTabLabelClass}>Guardados</span>
-                </TabsTrigger>
                 <TabsTrigger value="search" className={floatingTabTriggerClass}>
                   <TabIconBadge tint="blue" icon={Search} className="size-6" />
                   <span className={floatingTabLabelClass}>Buscar</span>

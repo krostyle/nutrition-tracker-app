@@ -53,7 +53,7 @@ export function FoodResultRow({
   );
 }
 
-export function SavedFoodsPickerTab({
+export function UnifiedFoodPickerTab({
   onSelect,
   onNavigate,
 }: {
@@ -61,46 +61,87 @@ export function SavedFoodsPickerTab({
   onNavigate?: () => void;
 }) {
   const [query, setQuery] = useState("");
-  const [foods, setFoods] = useState<Food[]>([]);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [savedFoods, setSavedFoods] = useState<Food[]>([]);
+  const [offItems, setOffItems] = useState<ExternalFoodResult[]>([]);
+  const [offNote, setOffNote] = useState<string | null>(null);
+  const [offLoading, startOffTransition] = useTransition();
+  const localDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const offDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function load(term: string) {
+  function loadLocal(term: string) {
     const trimmed = term.trim();
     const promise = trimmed ? searchLocalFoodsAction(trimmed) : listFoodsAction();
-    promise.then(setFoods);
+    promise.then(setSavedFoods);
+  }
+
+  function runOffSearch(term: string) {
+    startOffTransition(async () => {
+      const results = await searchFoodsAction(term.trim());
+      if (results.ok) {
+        setOffItems(results.results);
+        setOffNote(null);
+      } else {
+        setOffItems([]);
+        setOffNote("Open Food Facts no está disponible en este momento.");
+      }
+    });
   }
 
   useEffect(() => {
-    load("");
+    loadLocal("");
   }, []);
 
   function handleChange(value: string) {
     setQuery(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => load(value), LOCAL_DEBOUNCE_MS);
+
+    if (localDebounceRef.current) clearTimeout(localDebounceRef.current);
+    localDebounceRef.current = setTimeout(() => loadLocal(value), LOCAL_DEBOUNCE_MS);
+
+    if (offDebounceRef.current) clearTimeout(offDebounceRef.current);
+    if (value.trim().length < MIN_QUERY_LENGTH) {
+      setOffItems([]);
+      setOffNote(null);
+      return;
+    }
+    offDebounceRef.current = setTimeout(() => runOffSearch(value), SEARCH_DEBOUNCE_MS);
   }
+
+  const hasResults = savedFoods.length > 0 || offItems.length > 0;
 
   return (
     <div className="flex flex-col gap-2">
       <Input
-        placeholder="Buscar alimento guardado..."
+        placeholder="Buscar alimento..."
         value={query}
         onChange={(e) => handleChange(e.target.value)}
       />
-      <div className="max-h-52 overflow-hidden rounded-lg border">
-        <div className="flex max-h-52 flex-col overflow-y-auto">
-          {foods.length === 0 ? (
-            <p className="p-2 text-sm text-muted-foreground">Sin resultados.</p>
-          ) : (
-            foods.map((food) => (
+      <div className="max-h-64 overflow-hidden rounded-lg border">
+        <div className="flex max-h-64 flex-col overflow-y-auto">
+          {savedFoods.map((food) => (
+            <FoodResultRow
+              key={food.id}
+              name={food.name}
+              brand={food.brand ?? undefined}
+              values={food}
+              onSelect={() => onSelect({ kind: "existing", foodId: food.id, food })}
+            />
+          ))}
+          {offLoading && (
+            <p className="p-2 text-sm text-muted-foreground">Buscando en Open Food Facts...</p>
+          )}
+          {!offLoading && offNote && <p className="p-2 text-sm text-muted-foreground">{offNote}</p>}
+          {!offLoading &&
+            offItems.map((result) => (
               <FoodResultRow
-                key={food.id}
-                name={food.name}
-                brand={food.brand ?? undefined}
-                values={food}
-                onSelect={() => onSelect({ kind: "existing", foodId: food.id, food })}
+                key={result.externalId}
+                name={result.name}
+                brand={result.brand}
+                values={result}
+                onSelect={() => onSelect({ kind: "OFF", result })}
               />
-            ))
+            ))}
+          {!offLoading && !hasResults && (
+            <p className="p-2 text-sm text-muted-foreground">Sin resultados.</p>
           )}
         </div>
       </div>
@@ -112,79 +153,6 @@ export function SavedFoodsPickerTab({
         >
           Gestionar mis alimentos guardados
         </Link>
-      )}
-    </div>
-  );
-}
-
-export function SearchByNamePickerTab({ onSelect }: { onSelect: (pick: FoodPick) => void }) {
-  const [query, setQuery] = useState("");
-  const [pending, startTransition] = useTransition();
-  const [items, setItems] = useState<ExternalFoodResult[]>([]);
-  const [notes, setNotes] = useState<string[]>([]);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function runSearch(term: string) {
-    if (term.trim().length < MIN_QUERY_LENGTH) return;
-    startTransition(async () => {
-      const results = await searchFoodsAction(term.trim());
-      if (results.ok) {
-        setItems(results.results);
-        setNotes([]);
-      } else {
-        setItems([]);
-        setNotes(["Open Food Facts no está disponible en este momento."]);
-      }
-    });
-  }
-
-  function handleChange(value: string) {
-    setQuery(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (value.trim().length < MIN_QUERY_LENGTH) {
-      setItems([]);
-      return;
-    }
-    debounceRef.current = setTimeout(() => runSearch(value), SEARCH_DEBOUNCE_MS);
-  }
-
-  const tooShort = query.trim().length > 0 && query.trim().length < MIN_QUERY_LENGTH;
-
-  return (
-    <div className="flex flex-col gap-2">
-      <Input
-        placeholder="Nombre del alimento"
-        value={query}
-        onChange={(e) => handleChange(e.target.value)}
-      />
-      {tooShort && (
-        <p className="text-sm text-muted-foreground">Escribe al menos 3 caracteres.</p>
-      )}
-      {!tooShort && notes.map((note) => (
-        <p key={note} className="text-sm text-muted-foreground">
-          {note}
-        </p>
-      ))}
-      {!tooShort && (
-        <div className="max-h-52 overflow-hidden rounded-lg border">
-          <div className="flex max-h-52 flex-col overflow-y-auto">
-            {pending ? (
-              <p className="p-2 text-sm text-muted-foreground">Buscando...</p>
-            ) : items.length === 0 ? (
-              <p className="p-2 text-sm text-muted-foreground">Sin resultados.</p>
-            ) : (
-              items.map((result) => (
-                <FoodResultRow
-                  key={result.externalId}
-                  name={result.name}
-                  brand={result.brand}
-                  values={result}
-                  onSelect={() => onSelect({ kind: "OFF", result })}
-                />
-              ))
-            )}
-          </div>
-        </div>
       )}
     </div>
   );

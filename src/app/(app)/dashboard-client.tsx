@@ -679,7 +679,7 @@ export function DashboardClient() {
             />
           ))}
         </div>
-        <DragOverlay>
+        <DragOverlay dropAnimation={null}>
           {activeEntry ? (
             <div className="rounded-lg border bg-card px-3 py-2 text-sm shadow-lg">
               {activeEntry.food?.name ?? activeEntry.recipe?.name}

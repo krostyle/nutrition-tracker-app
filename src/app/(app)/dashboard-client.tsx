@@ -2,16 +2,40 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import {
+  Coffee,
+  Cookie,
+  GripVertical,
+  Moon,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Plus,
+  Sun,
+  Trash2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TabIconBadge, type TabTint } from "@/components/ui/floating-tab-bar";
 import { MACRO_PERCENT_SEGMENTS } from "./foods/nutrition-facts";
 import {
   deleteLogEntryAction,
   getDaySummaryAction,
+  updateLogEntryMealTypeAction,
   updateLogEntryQuantityAction,
   type DaySummary,
   type LogEntryDisplay,
@@ -27,6 +51,13 @@ import type { MealType } from "@/generated/prisma/client";
 import { MealFoodPicker } from "./meal-food-picker";
 
 const MEAL_TYPES: MealType[] = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"];
+
+const MEAL_META: Record<MealType, { label: string; icon: typeof Coffee; tint: TabTint }> = {
+  BREAKFAST: { label: "Desayuno", icon: Coffee, tint: "amber" },
+  LUNCH: { label: "Almuerzo", icon: Sun, tint: "emerald" },
+  DINNER: { label: "Cena", icon: Moon, tint: "violet" },
+  SNACK: { label: "Snack", icon: Cookie, tint: "rose" },
+};
 
 const MEAL_LABELS: Record<MealType, string> = {
   BREAKFAST: "Desayuno",
@@ -226,7 +257,7 @@ function EntryRow({
   }
 
   return (
-    <div className="flex flex-col gap-1.5 py-2.5 first:pt-0 last:pb-0">
+    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
       <div className="flex items-center justify-between gap-2 text-sm">
         <div className="min-w-0 flex-1">
           <p className="truncate">{name}</p>
@@ -288,6 +319,88 @@ function EntryRow({
         </div>
       )}
       {error && <p className="text-xs text-destructive">{error}</p>}
+    </div>
+  );
+}
+
+function DraggableEntryRow({
+  entry,
+  mealType,
+  onChanged,
+}: {
+  entry: LogEntryDisplay;
+  mealType: MealType;
+  onChanged: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: entry.id,
+    data: { mealType },
+  });
+
+  return (
+    <div className={cn("flex items-start gap-1 py-2.5 first:pt-0 last:pb-0", isDragging && "opacity-40")}>
+      <button
+        ref={setNodeRef}
+        {...listeners}
+        {...attributes}
+        type="button"
+        aria-label={`Mover ${entry.food?.name ?? entry.recipe?.name ?? ""}`}
+        className="mt-2.5 flex shrink-0 touch-none cursor-grab items-center justify-center rounded p-1 text-muted-foreground/40 hover:text-muted-foreground active:cursor-grabbing"
+      >
+        <GripVertical className="size-4" />
+      </button>
+      <EntryRow entry={entry} onChanged={onChanged} />
+    </div>
+  );
+}
+
+function MealSection({
+  mealType,
+  entries,
+  onAdd,
+  onChanged,
+}: {
+  mealType: MealType;
+  entries: LogEntryDisplay[];
+  onAdd: () => void;
+  onChanged: () => void;
+}) {
+  const meta = MEAL_META[mealType];
+  const { setNodeRef, isOver } = useDroppable({ id: mealType });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm transition-colors sm:p-5",
+        isOver && "border-primary ring-2 ring-primary/30",
+      )}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <TabIconBadge tint={meta.tint} icon={meta.icon} className="size-9" />
+          <h3 className="font-medium">{meta.label}</h3>
+        </div>
+        <Button
+          size="icon-sm"
+          variant="outline"
+          aria-label={`Agregar a ${meta.label}`}
+          onClick={onAdd}
+        >
+          <Plus className="size-4" />
+        </Button>
+      </div>
+      {entries.length ? (
+        <div className="flex flex-col divide-y divide-border">
+          {entries.map((entry) => (
+            <DraggableEntryRow key={entry.id} entry={entry} mealType={mealType} onChanged={onChanged} />
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          {isOver ? "Soltar aquí" : "Sin entradas."}
+        </p>
+      )}
     </div>
   );
 }
@@ -372,10 +485,13 @@ function DashboardSkeleton() {
           ))}
         </div>
       </div>
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex flex-col gap-2">
-            <Skeleton className="h-5 w-24" />
+          <div key={i} className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm sm:p-5">
+            <div className="flex items-center gap-2.5">
+              <Skeleton className="size-9 rounded-full" />
+              <Skeleton className="h-5 w-24" />
+            </div>
             <Skeleton className="h-4 w-40" />
           </div>
         ))}
@@ -388,8 +504,11 @@ export function DashboardClient() {
   const [dateKey, setDateKey] = useState(todayDateKey());
   const [summary, setSummary] = useState<DaySummary | null>(null);
   const [openMealType, setOpenMealType] = useState<MealType | null>(null);
+  const [activeEntry, setActiveEntry] = useState<LogEntryDisplay | null>(null);
   const [pending, startTransition] = useTransition();
   const dayRequestRef = useRef(0);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const weekStartKey = getWeekStartKey(dateKey);
 
@@ -412,6 +531,25 @@ export function DashboardClient() {
     return <DashboardSkeleton />;
   }
 
+  function handleDragStart(event: DragStartEvent) {
+    const id = event.active.id as string;
+    const entry = MEAL_TYPES.flatMap((mt) => summary!.entriesByMeal[mt]).find((e) => e.id === id);
+    setActiveEntry(entry ?? null);
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    setActiveEntry(null);
+    if (!over) return;
+    const fromMealType = active.data.current?.mealType as MealType | undefined;
+    const toMealType = over.id as MealType;
+    if (!fromMealType || fromMealType === toMealType) return;
+    startTransition(async () => {
+      const outcome = await updateLogEntryMealTypeAction(active.id as string, toMealType);
+      if (outcome.ok) refreshDay();
+    });
+  }
+
   return (
     <div className="flex w-full max-w-2xl flex-col gap-6">
       <WeekStrip
@@ -423,35 +561,36 @@ export function DashboardClient() {
 
       <DayTotals dateKey={dateKey} summary={summary} />
 
-      <div className="flex flex-col divide-y divide-border sm:rounded-xl sm:border sm:bg-card sm:shadow-sm">
-        {MEAL_TYPES.map((mealType) => (
-          <div
-            key={mealType}
-            className="flex flex-col gap-2 py-5 first:pt-0 last:pb-0 sm:px-6 sm:py-5 sm:first:pt-5 sm:last:pb-5"
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium">{MEAL_LABELS[mealType]}</h3>
-              <Button
-                size="icon-sm"
-                variant="outline"
-                aria-label={`Agregar a ${MEAL_LABELS[mealType]}`}
-                onClick={() => setOpenMealType(mealType)}
-              >
-                <Plus className="size-4" />
-              </Button>
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={() => setActiveEntry(null)}
+      >
+        <div className="flex flex-col gap-3">
+          {MEAL_TYPES.map((mealType) => (
+            <MealSection
+              key={mealType}
+              mealType={mealType}
+              entries={summary.entriesByMeal[mealType]}
+              onAdd={() => setOpenMealType(mealType)}
+              onChanged={refreshDay}
+            />
+          ))}
+        </div>
+        <DragOverlay>
+          {activeEntry ? (
+            <div className="rounded-lg border bg-card px-3 py-2 text-sm shadow-lg">
+              {activeEntry.food?.name ?? activeEntry.recipe?.name}
             </div>
-            {summary.entriesByMeal[mealType].length ? (
-              <div className="flex flex-col divide-y divide-border">
-                {summary.entriesByMeal[mealType].map((entry) => (
-                  <EntryRow key={entry.id} entry={entry} onChanged={refreshDay} />
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Sin entradas.</p>
-            )}
-          </div>
-        ))}
-      </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+
+      <p className="text-center text-xs text-muted-foreground">
+        Mantén presionado el ícono <GripVertical className="inline size-3" /> para arrastrar un
+        alimento a otra comida.
+      </p>
 
       {openMealType && (
         <MealFoodPicker

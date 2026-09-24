@@ -65,6 +65,17 @@ export async function updateLogEntryQuantity(
   });
 }
 
+export async function updateLogEntryMealType(
+  id: string,
+  mealType: MealType,
+): Promise<FoodLogEntryWithDetails> {
+  return prisma.foodLogEntry.update({
+    where: { id },
+    data: { mealType },
+    include: LOG_ENTRY_INCLUDE,
+  });
+}
+
 export async function deleteLogEntry(id: string): Promise<void> {
   await prisma.foodLogEntry.delete({ where: { id } });
 }

@@ -13,6 +13,7 @@ import {
   deleteLogEntry,
   listLogEntriesForDate,
   listLogEntriesForDateRange,
+  updateLogEntryMealType,
   updateLogEntryQuantity,
   type FoodLogEntryWithDetails,
 } from "./log-entries";
@@ -151,6 +152,13 @@ export async function updateLogEntryQuantityAction(
   quantity: number,
 ): Promise<ActionResult<FoodLogEntryWithDetails>> {
   return runAction(() => updateLogEntryQuantity(id, quantity), LOG_ENTRY_ERROR);
+}
+
+export async function updateLogEntryMealTypeAction(
+  id: string,
+  mealType: MealType,
+): Promise<ActionResult<FoodLogEntryWithDetails>> {
+  return runAction(() => updateLogEntryMealType(id, mealType), LOG_ENTRY_ERROR);
 }
 
 export async function deleteLogEntryAction(id: string): Promise<ActionResult<void>> {

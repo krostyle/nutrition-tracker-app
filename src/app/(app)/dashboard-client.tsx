@@ -232,6 +232,7 @@ function EntryRow({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [swipeX, setSwipeX] = useState(0);
+  const [isSwipingActive, setIsSwipingActive] = useState(false);
   const trackRef = useRef<PointerTrack | null>(null);
   const movedRef = useRef(false);
 
@@ -311,6 +312,7 @@ function EntryRow({
         return;
       }
       track.swiping = true;
+      setIsSwipingActive(true);
     }
 
     setSwipeX(Math.max(-SWIPE_MAX, Math.min(0, dx)));
@@ -321,6 +323,7 @@ function EntryRow({
     trackRef.current = null;
     if (track?.pointerId !== e.pointerId) return;
     if (track.swiping) {
+      setIsSwipingActive(false);
       if (swipeX <= -SWIPE_DELETE_THRESHOLD) {
         remove();
       } else {
@@ -331,6 +334,7 @@ function EntryRow({
 
   function handlePointerCancel() {
     trackRef.current = null;
+    setIsSwipingActive(false);
     setSwipeX(0);
   }
 
@@ -345,9 +349,13 @@ function EntryRow({
   return (
     <>
       <div className="group relative overflow-hidden">
-        <div className="absolute inset-0 z-0 flex items-center justify-end bg-destructive px-4 text-destructive-foreground">
-          <Trash2 className="size-4" />
-        </div>
+        {!isDragging && (
+          <div className="absolute inset-0 z-0 flex items-center justify-end pr-3">
+            <div className="flex size-9 items-center justify-center rounded-full bg-destructive text-destructive-foreground">
+              <Trash2 className="size-4" />
+            </div>
+          </div>
+        )}
         <div
           ref={setNodeRef}
           {...attributes}
@@ -361,6 +369,9 @@ function EntryRow({
           style={swipeX ? { transform: `translateX(${swipeX}px)` } : undefined}
           className={cn(
             "relative z-10 flex cursor-pointer touch-none items-start gap-1 bg-card py-2.5 select-none group-first:pt-0 group-last:pb-0",
+            isSwipingActive
+              ? "transition-opacity duration-150"
+              : "transition-[opacity,transform] duration-200 ease-out",
             isDragging && "opacity-40",
           )}
         >
@@ -428,7 +439,7 @@ function MealSection({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm transition-colors sm:p-5",
+        "flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm transition-[border-color,box-shadow] duration-200 sm:p-5",
         isOver && "border-primary ring-2 ring-primary/30",
       )}
     >

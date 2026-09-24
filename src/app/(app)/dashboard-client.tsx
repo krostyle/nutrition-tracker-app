@@ -233,6 +233,7 @@ function EntryRow({
   const [error, setError] = useState<string | null>(null);
   const [swipeX, setSwipeX] = useState(0);
   const [isSwipingActive, setIsSwipingActive] = useState(false);
+  const [wasDragging, setWasDragging] = useState(false);
   const trackRef = useRef<PointerTrack | null>(null);
   const movedRef = useRef(false);
 
@@ -242,6 +243,20 @@ function EntryRow({
     id: entry.id,
     data: { mealType },
   });
+
+  // dnd-kit puede confirmar el drag justo cuando nuestro propio detector de
+  // swipe (que corre por su cuenta en cada pointermove, antes de que React
+  // re-renderice con isDragging=true) ya alcanzó a reaccionar al primer
+  // movimiento. Se corrige acá, comparando contra el isDragging anterior
+  // durante el render mismo — no en un efecto — para que no se alcance a
+  // pintar el ícono de eliminar ni un frame.
+  if (isDragging !== wasDragging) {
+    setWasDragging(isDragging);
+    if (isDragging) {
+      setIsSwipingActive(false);
+      setSwipeX(0);
+    }
+  }
 
   function openDialog() {
     setError(null);

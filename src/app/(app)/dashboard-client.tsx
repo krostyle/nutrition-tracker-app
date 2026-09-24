@@ -26,12 +26,20 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { SegmentedToggle } from "@/components/ui/segmented-toggle";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TabIconBadge, type TabTint } from "@/components/ui/floating-tab-bar";
-import { MACRO_PERCENT_SEGMENTS } from "./foods/nutrition-facts";
+import {
+  FoodNutritionDetail,
+  MACRO_PERCENT_SEGMENTS,
+  type NutrientValues,
+} from "./foods/nutrition-facts";
 import {
   deleteLogEntryAction,
   getDaySummaryAction,
@@ -47,6 +55,7 @@ import {
   shiftDateKey,
   todayDateKey,
 } from "@/lib/nutrition/date";
+import { getRecipeDetailAction } from "@/lib/nutrition/recipe-actions";
 import type { MealType } from "@/generated/prisma/client";
 import { MealFoodPicker } from "./meal-food-picker";
 
@@ -189,8 +198,6 @@ function DayTotals({ dateKey, summary }: { dateKey: string; summary: DaySummary 
   );
 }
 
-type QuantityUnit = "grams" | "serving";
-
 const CLICK_MOVE_THRESHOLD = 6;
 const SWIPE_START_THRESHOLD = 10;
 const SWIPE_MAX = 96;
@@ -215,14 +222,13 @@ function EntryRow({
 }) {
   const isRecipe = Boolean(entry.recipe);
   const name = entry.food?.name ?? entry.recipe?.name ?? "";
+  const brand = entry.food?.brand ?? undefined;
   const displayUnit = isRecipe ? "porciones" : "g";
   const servingSize = entry.food?.servingSize ?? undefined;
   const servingLabel = entry.food?.servingLabel ?? undefined;
-  const hasServing = !isRecipe && servingSize !== undefined;
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [unit, setUnit] = useState<QuantityUnit>("grams");
-  const [quantity, setQuantity] = useState(String(entry.quantity));
+  const [recipeValues, setRecipeValues] = useState<NutrientValues | null>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [swipeX, setSwipeX] = useState(0);
@@ -237,28 +243,21 @@ function EntryRow({
   });
 
   function openDialog() {
-    setUnit("grams");
-    setQuantity(String(entry.quantity));
     setError(null);
+    if (isRecipe && entry.recipe) {
+      setRecipeValues(null);
+      getRecipeDetailAction(entry.recipe.id).then((detail) => {
+        if (detail) setRecipeValues(detail.calculation.perServing);
+      });
+    }
     setDialogOpen(true);
   }
 
-  function handleUnitChange(next: QuantityUnit) {
-    setUnit(next);
-    if (next === "serving" && servingSize) {
-      setQuantity(String(round(entry.quantity / servingSize)));
-    } else {
-      setQuantity(String(entry.quantity));
-    }
-  }
-
-  function save() {
-    const value = Number(quantity);
-    if (!value || value <= 0) return;
-    const grams = !isRecipe && unit === "serving" ? value * (servingSize ?? 0) : value;
+  function save(finalQuantity: number) {
+    if (!finalQuantity || finalQuantity <= 0) return;
     setError(null);
     startTransition(async () => {
-      const outcome = await updateLogEntryQuantityAction(entry.id, grams);
+      const outcome = await updateLogEntryQuantityAction(entry.id, finalQuantity);
       if (outcome.ok) {
         setDialogOpen(false);
         onChanged();
@@ -375,43 +374,36 @@ function EntryRow({
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{name}</DialogTitle>
+            <DialogDescription>
+              {brand ? `${brand} · Valores nutricionales` : "Valores nutricionales"}
+            </DialogDescription>
           </DialogHeader>
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <div className="flex flex-wrap items-center gap-2">
-            <Input
-              className="h-9 w-24"
-              type="number"
-              step="any"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
+          {dialogOpen && (isRecipe ? recipeValues : entry.food) ? (
+            <FoodNutritionDetail
+              baseValues={(isRecipe ? recipeValues : entry.food)!}
+              isRecipe={isRecipe}
+              servingSize={servingSize}
+              servingLabel={servingLabel}
+              initialQuantity={entry.quantity}
+              footer={(finalQuantity) => (
+                <div className="flex items-center justify-between gap-2">
+                  <Button variant="destructive" size="sm" disabled={pending} onClick={remove}>
+                    <Trash2 className="size-4" />
+                    Eliminar
+                  </Button>
+                  <Button size="sm" disabled={pending || !finalQuantity} onClick={() => save(finalQuantity)}>
+                    {pending ? "Guardando..." : "Guardar"}
+                  </Button>
+                </div>
+              )}
             />
-            {isRecipe ? (
-              <span className="text-sm text-muted-foreground">porciones</span>
-            ) : hasServing ? (
-              <SegmentedToggle
-                options={[
-                  { value: "grams", label: "gramos" },
-                  { value: "serving", label: servingLabel ?? "porción" },
-                ]}
-                value={unit}
-                onChange={handleUnitChange}
-              />
-            ) : (
-              <span className="text-sm text-muted-foreground">g</span>
-            )}
-          </div>
-          <div className="flex items-center justify-between gap-2 pt-2">
-            <Button variant="destructive" size="sm" disabled={pending} onClick={remove}>
-              <Trash2 className="size-4" />
-              Eliminar
-            </Button>
-            <Button size="sm" disabled={pending} onClick={save}>
-              {pending ? "Guardando..." : "Guardar"}
-            </Button>
-          </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Cargando...</p>
+          )}
         </DialogContent>
       </Dialog>
     </>

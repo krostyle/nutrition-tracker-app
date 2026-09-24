@@ -155,21 +155,29 @@ type QuantityUnit = "grams" | "serving";
 
 // baseValues: por 100g para alimento, por porción para receta (isRecipe).
 // footer recibe la cantidad ya en la unidad que se persiste (gramos o porciones).
+// initialQuantity/initialUnit permiten abrir el detalle ya con una cantidad
+// cargada (editar una entrada existente) en vez de arrancar en 100g/1 porción.
 export function FoodNutritionDetail({
   baseValues,
   isRecipe = false,
   servingSize,
   servingLabel,
+  initialQuantity,
+  initialUnit,
   footer,
 }: {
   baseValues: NutrientValues;
   isRecipe?: boolean;
   servingSize?: number;
   servingLabel?: string;
+  initialQuantity?: number;
+  initialUnit?: QuantityUnit;
   footer?: (finalQuantity: number) => React.ReactNode;
 }) {
-  const [unit, setUnit] = useState<QuantityUnit>(isRecipe ? "serving" : "grams");
-  const [quantity, setQuantity] = useState(isRecipe ? "1" : "100");
+  const [unit, setUnit] = useState<QuantityUnit>(initialUnit ?? (isRecipe ? "serving" : "grams"));
+  const [quantity, setQuantity] = useState(
+    initialQuantity !== undefined ? String(initialQuantity) : isRecipe ? "1" : "100",
+  );
   const [expanded, setExpanded] = useState(false);
 
   const quantityNumber = Number(quantity) || 0;

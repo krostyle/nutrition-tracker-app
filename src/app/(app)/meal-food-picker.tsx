@@ -35,7 +35,7 @@ import {
 
 type Candidate =
   | { kind: "existing"; foodId: string; food: Food }
-  | { kind: "OFF" | "USDA"; result: ExternalFoodResult }
+  | { kind: "OFF"; result: ExternalFoodResult }
   | { kind: "recipe"; recipeId: string; name: string; perServing: NutrientValues };
 
 function candidateName(candidate: Candidate): string {

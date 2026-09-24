@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import type { Food, FoodSource } from "@/generated/prisma/client";
+import type { Food } from "@/generated/prisma/client";
 import type { NormalizedNutrients } from "./types";
 
 export async function persistExternalFood(
-  source: Extract<FoodSource, "OFF" | "USDA">,
+  source: "OFF",
   externalId: string,
   nutrients: NormalizedNutrients,
 ): Promise<Food> {

@@ -5,7 +5,8 @@ import Link from "next/link";
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useDraggable,
   useDroppable,
   useSensor,
@@ -16,11 +17,9 @@ import {
 import {
   Coffee,
   Cookie,
-  GripVertical,
   Moon,
   ChevronLeft,
   ChevronRight,
-  Pencil,
   Plus,
   Sun,
   Trash2,
@@ -191,11 +190,26 @@ function DayTotals({ dateKey, summary }: { dateKey: string; summary: DaySummary 
 
 type QuantityUnit = "grams" | "serving";
 
+const CLICK_MOVE_THRESHOLD = 6;
+const SWIPE_START_THRESHOLD = 10;
+const SWIPE_MAX = 96;
+const SWIPE_DELETE_THRESHOLD = 64;
+
+type PointerTrack = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  isTouch: boolean;
+  swiping: boolean;
+};
+
 function EntryRow({
   entry,
+  mealType,
   onChanged,
 }: {
   entry: LogEntryDisplay;
+  mealType: MealType;
   onChanged: () => void;
 }) {
   const isRecipe = Boolean(entry.recipe);
@@ -210,8 +224,17 @@ function EntryRow({
   const [quantity, setQuantity] = useState(String(entry.quantity));
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [swipeX, setSwipeX] = useState(0);
+  const trackRef = useRef<PointerTrack | null>(null);
+  const movedRef = useRef(false);
 
   const calories = round(entry.calories);
+
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: entry.id,
+    data: { mealType },
+    disabled: editing,
+  });
 
   function startEditing() {
     setUnit("grams");
@@ -251,105 +274,163 @@ function EntryRow({
       if (outcome.ok) {
         onChanged();
       } else {
+        setSwipeX(0);
         setError(outcome.message);
       }
     });
   }
 
+  function handlePointerDown(e: React.PointerEvent) {
+    movedRef.current = false;
+    if (!editing) {
+      trackRef.current = {
+        pointerId: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        isTouch: e.pointerType === "touch",
+        swiping: false,
+      };
+    }
+  }
+
+  function handlePointerMove(e: React.PointerEvent) {
+    const track = trackRef.current;
+    if (!track || track.pointerId !== e.pointerId) return;
+    const dx = e.clientX - track.startX;
+    const dy = e.clientY - track.startY;
+
+    if (Math.abs(dx) > CLICK_MOVE_THRESHOLD || Math.abs(dy) > CLICK_MOVE_THRESHOLD) {
+      movedRef.current = true;
+    }
+
+    if (!track.isTouch || isDragging) return;
+
+    if (!track.swiping) {
+      if (Math.abs(dx) < SWIPE_START_THRESHOLD && Math.abs(dy) < SWIPE_START_THRESHOLD) return;
+      if (Math.abs(dy) >= Math.abs(dx)) {
+        trackRef.current = null;
+        return;
+      }
+      track.swiping = true;
+    }
+
+    setSwipeX(Math.max(-SWIPE_MAX, Math.min(0, dx)));
+  }
+
+  function handlePointerUp(e: React.PointerEvent) {
+    const track = trackRef.current;
+    trackRef.current = null;
+    if (track?.pointerId !== e.pointerId) return;
+    if (track.swiping) {
+      if (swipeX <= -SWIPE_DELETE_THRESHOLD) {
+        remove();
+      } else {
+        setSwipeX(0);
+      }
+    }
+  }
+
+  function handlePointerCancel() {
+    trackRef.current = null;
+    setSwipeX(0);
+  }
+
+  function handleClick() {
+    if (editing || movedRef.current) {
+      movedRef.current = false;
+      return;
+    }
+    startEditing();
+  }
+
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-      <div className="flex items-center justify-between gap-2 text-sm">
-        <div className="min-w-0 flex-1">
-          <p className="truncate">{name}</p>
-          {!editing && (
-            <p className="text-muted-foreground">
-              {entry.quantity} {displayUnit} · {calories} kcal
-            </p>
-          )}
-        </div>
-        <div className="flex shrink-0 items-center gap-1">
-          {editing ? (
-            <Button size="sm" variant="outline" disabled={pending} onClick={save}>
-              Guardar
-            </Button>
-          ) : (
-            <Button
-              size="icon-sm"
-              variant="ghost"
-              aria-label={`Editar ${name}`}
-              onClick={startEditing}
-            >
-              <Pencil className="size-3.5" />
-            </Button>
-          )}
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            aria-label={`Eliminar ${name}`}
-            disabled={pending}
-            onClick={remove}
-          >
-            <Trash2 className="size-3.5" />
-          </Button>
-        </div>
+    <div className="group relative overflow-hidden">
+      <div className="absolute inset-0 z-0 flex items-center justify-end bg-destructive px-4 text-destructive-foreground">
+        <Trash2 className="size-4" />
       </div>
-      {editing && (
-        <div className="flex flex-wrap items-center gap-2">
-          <Input
-            className="h-7 w-20"
-            type="number"
-            step="any"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-          />
-          {isRecipe ? (
-            <span className="text-xs text-muted-foreground">porciones</span>
-          ) : hasServing ? (
-            <SegmentedToggle
-              options={[
-                { value: "grams", label: "gramos" },
-                { value: "serving", label: servingLabel ?? "porción" },
-              ]}
-              value={unit}
-              onChange={handleUnitChange}
-            />
-          ) : (
-            <span className="text-xs text-muted-foreground">g</span>
-          )}
-        </div>
-      )}
-      {error && <p className="text-xs text-destructive">{error}</p>}
-    </div>
-  );
-}
-
-function DraggableEntryRow({
-  entry,
-  mealType,
-  onChanged,
-}: {
-  entry: LogEntryDisplay;
-  mealType: MealType;
-  onChanged: () => void;
-}) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: entry.id,
-    data: { mealType },
-  });
-
-  return (
-    <div className={cn("flex items-start gap-1 py-2.5 first:pt-0 last:pb-0", isDragging && "opacity-40")}>
-      <button
+      <div
         ref={setNodeRef}
-        {...listeners}
         {...attributes}
-        type="button"
-        aria-label={`Mover ${entry.food?.name ?? entry.recipe?.name ?? ""}`}
-        className="mt-2.5 flex shrink-0 touch-none cursor-grab items-center justify-center rounded p-1 text-muted-foreground/40 hover:text-muted-foreground active:cursor-grabbing"
+        role={undefined}
+        {...listeners}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onClick={handleClick}
+        style={swipeX ? { transform: `translateX(${swipeX}px)` } : undefined}
+        className={cn(
+          "relative z-10 flex touch-none items-start gap-1 bg-card py-2.5 select-none group-first:pt-0 group-last:pb-0",
+          !editing && "cursor-pointer",
+          isDragging && "opacity-40",
+        )}
       >
-        <GripVertical className="size-4" />
-      </button>
-      <EntryRow entry={entry} onChanged={onChanged} />
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <div className="flex items-center justify-between gap-2 text-sm">
+            <div className="min-w-0 flex-1">
+              <p className="truncate">{name}</p>
+              {!editing && (
+                <p className="text-muted-foreground">
+                  {entry.quantity} {displayUnit} · {calories} kcal
+                </p>
+              )}
+            </div>
+            {editing && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={pending}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  save();
+                }}
+              >
+                Guardar
+              </Button>
+            )}
+          </div>
+          {editing && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                className="h-7 w-20"
+                type="number"
+                step="any"
+                value={quantity}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setQuantity(e.target.value)}
+              />
+              {isRecipe ? (
+                <span className="text-xs text-muted-foreground">porciones</span>
+              ) : hasServing ? (
+                <SegmentedToggle
+                  options={[
+                    { value: "grams", label: "gramos" },
+                    { value: "serving", label: servingLabel ?? "porción" },
+                  ]}
+                  value={unit}
+                  onChange={handleUnitChange}
+                />
+              ) : (
+                <span className="text-xs text-muted-foreground">g</span>
+              )}
+            </div>
+          )}
+          {error && <p className="text-xs text-destructive">{error}</p>}
+        </div>
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          aria-label={`Eliminar ${name}`}
+          disabled={pending}
+          onClick={(e) => {
+            e.stopPropagation();
+            remove();
+          }}
+          className="hidden shrink-0 sm:inline-flex"
+        >
+          <Trash2 className="size-3.5" />
+        </Button>
+      </div>
     </div>
   );
 }
@@ -393,7 +474,7 @@ function MealSection({
       {entries.length ? (
         <div className="flex flex-col divide-y divide-border">
           {entries.map((entry) => (
-            <DraggableEntryRow key={entry.id} entry={entry} mealType={mealType} onChanged={onChanged} />
+            <EntryRow key={entry.id} entry={entry} mealType={mealType} onChanged={onChanged} />
           ))}
         </div>
       ) : (
@@ -508,7 +589,10 @@ export function DashboardClient() {
   const [pending, startTransition] = useTransition();
   const dayRequestRef = useRef(0);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+  );
 
   const weekStartKey = getWeekStartKey(dateKey);
 
@@ -588,8 +672,8 @@ export function DashboardClient() {
       </DndContext>
 
       <p className="text-center text-xs text-muted-foreground">
-        Mantén presionado el ícono <GripVertical className="inline size-3" /> para arrastrar un
-        alimento a otra comida.
+        Arrastra un registro para moverlo a otra comida, tócalo para editarlo o deslízalo hacia la
+        izquierda para eliminarlo.
       </p>
 
       {openMealType && (

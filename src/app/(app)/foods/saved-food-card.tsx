@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -10,14 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { Food, FoodSource } from "@/generated/prisma/client";
+import type { Food } from "@/generated/prisma/client";
 import { FoodNutritionDetail, MacroRow } from "./nutrition-facts";
-
-const SOURCE_LABELS: Record<FoodSource, string> = {
-  OFF: "OFF",
-  USDA: "USDA",
-  MANUAL: "Manual",
-};
 
 export function SavedFoodCard({ food }: { food: Food }) {
   const [open, setOpen] = useState(false);
@@ -36,7 +29,7 @@ export function SavedFoodCard({ food }: { food: Food }) {
         }}
         className="cursor-pointer transition-colors hover:bg-muted/40"
       >
-        <CardHeader className="flex flex-row items-start justify-between gap-4">
+        <CardHeader>
           <div className="min-w-0">
             <CardTitle className="truncate text-base">{food.name}</CardTitle>
             {food.brand && (
@@ -44,9 +37,6 @@ export function SavedFoodCard({ food }: { food: Food }) {
             )}
             <MacroRow values={food} />
           </div>
-          <Badge variant="secondary" className="shrink-0">
-            {SOURCE_LABELS[food.source]}
-          </Badge>
         </CardHeader>
       </Card>
 

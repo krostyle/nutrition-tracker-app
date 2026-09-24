@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -17,12 +16,10 @@ import { FoodNutritionDetail, MacroRow } from "./nutrition-facts";
 
 export function FoodResultCard({
   result,
-  source,
   onSave,
   defaultOpen = false,
 }: {
   result: ExternalFoodResult;
-  source: "OFF" | "USDA";
   onSave: () => Promise<ActionResult<unknown>>;
   defaultOpen?: boolean;
 }) {
@@ -58,7 +55,7 @@ export function FoodResultCard({
         }}
         className="cursor-pointer transition-colors hover:bg-muted/40"
       >
-        <CardHeader className="flex flex-row items-start justify-between gap-4">
+        <CardHeader>
           <div className="min-w-0">
             <CardTitle className="truncate text-base">{result.name}</CardTitle>
             {result.brand && (
@@ -66,9 +63,6 @@ export function FoodResultCard({
             )}
             <MacroRow values={result} />
           </div>
-          <Badge variant="secondary" className="shrink-0">
-            {source}
-          </Badge>
         </CardHeader>
         <CardContent className="flex flex-col gap-1.5">
           {saved ? (

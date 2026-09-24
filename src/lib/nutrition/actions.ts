@@ -171,7 +171,7 @@ export async function searchLocalFoodsAction(query: string): Promise<Food[]> {
 
 export type AddFoodToMealInput =
   | { kind: "existing"; foodId: string }
-  | { kind: "OFF" | "USDA"; result: ExternalFoodResult }
+  | { kind: "OFF"; result: ExternalFoodResult }
   | { kind: "manual"; input: ManualFoodInput }
   | { kind: "recipe"; recipeId: string };
 

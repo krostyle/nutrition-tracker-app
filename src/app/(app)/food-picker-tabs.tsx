@@ -23,23 +23,21 @@ const SEARCH_DEBOUNCE_MS = 800;
 const LOCAL_DEBOUNCE_MS = 400;
 
 // Un alimento elegido desde cualquier fuente. "existing" ya es un Food
-// persistido; "OFF"/"USDA" todavía no existen en la BD — quien use este
-// picker decide si/cuándo guardarlos (ver saveOffFoodAction/saveUsdaFoodAction).
+// persistido; "OFF" todavía no existe en la BD — quien use este picker
+// decide si/cuándo guardarlo (ver saveOffFoodAction).
 export type FoodPick =
   | { kind: "existing"; foodId: string; food: Food }
-  | { kind: "OFF" | "USDA"; result: ExternalFoodResult };
+  | { kind: "OFF"; result: ExternalFoodResult };
 
 export function FoodResultRow({
   name,
   brand,
   values,
-  badge,
   onSelect,
 }: {
   name: string;
   brand?: string;
   values: NutrientValues;
-  badge?: string;
   onSelect: () => void;
 }) {
   return (
@@ -48,10 +46,7 @@ export function FoodResultRow({
       onClick={onSelect}
       className="flex flex-col gap-1 border-b px-2 py-2 text-left text-sm last:border-b-0 hover:bg-muted"
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="min-w-0 flex-1 truncate font-medium">{name}</span>
-        {badge && <span className="shrink-0 text-xs text-muted-foreground">{badge}</span>}
-      </div>
+      <span className="truncate font-medium">{name}</span>
       {brand && <p className="truncate text-xs text-muted-foreground">{brand}</p>}
       <MacroRow values={values} />
     </button>
@@ -125,9 +120,7 @@ export function SavedFoodsPickerTab({
 export function SearchByNamePickerTab({ onSelect }: { onSelect: (pick: FoodPick) => void }) {
   const [query, setQuery] = useState("");
   const [pending, startTransition] = useTransition();
-  const [items, setItems] = useState<{ result: ExternalFoodResult; source: "OFF" | "USDA" }[]>(
-    [],
-  );
+  const [items, setItems] = useState<ExternalFoodResult[]>([]);
   const [notes, setNotes] = useState<string[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -135,22 +128,13 @@ export function SearchByNamePickerTab({ onSelect }: { onSelect: (pick: FoodPick)
     if (term.trim().length < MIN_QUERY_LENGTH) return;
     startTransition(async () => {
       const results = await searchFoodsAction(term.trim());
-      const nextItems: { result: ExternalFoodResult; source: "OFF" | "USDA" }[] = [];
-      const nextNotes: string[] = [];
-      if (results.off.ok) {
-        nextItems.push(...results.off.results.map((result) => ({ result, source: "OFF" as const })));
+      if (results.ok) {
+        setItems(results.results);
+        setNotes([]);
       } else {
-        nextNotes.push("Open Food Facts no está disponible en este momento.");
+        setItems([]);
+        setNotes(["Open Food Facts no está disponible en este momento."]);
       }
-      if (results.usda.ok) {
-        nextItems.push(
-          ...results.usda.results.map((result) => ({ result, source: "USDA" as const })),
-        );
-      } else {
-        nextNotes.push("USDA FoodData Central no está disponible en este momento.");
-      }
-      setItems(nextItems);
-      setNotes(nextNotes);
     });
   }
 
@@ -189,14 +173,13 @@ export function SearchByNamePickerTab({ onSelect }: { onSelect: (pick: FoodPick)
             ) : items.length === 0 ? (
               <p className="p-2 text-sm text-muted-foreground">Sin resultados.</p>
             ) : (
-              items.map(({ result, source }) => (
+              items.map((result) => (
                 <FoodResultRow
-                  key={`${source}-${result.externalId}`}
+                  key={result.externalId}
                   name={result.name}
                   brand={result.brand}
                   values={result}
-                  badge={source}
-                  onSelect={() => onSelect({ kind: source, result })}
+                  onSelect={() => onSelect({ kind: "OFF", result })}
                 />
               ))
             )}

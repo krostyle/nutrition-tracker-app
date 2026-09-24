@@ -18,11 +18,7 @@ import {
   floatingTabListClass,
   floatingTabTriggerClass,
 } from "@/components/ui/floating-tab-bar";
-import {
-  createManualFoodAction,
-  saveOffFoodAction,
-  saveUsdaFoodAction,
-} from "@/lib/food-sources/actions";
+import { createManualFoodAction, saveOffFoodAction } from "@/lib/food-sources/actions";
 import type { ManualFoodInput } from "@/lib/food-sources/persist";
 import type { Food } from "@/generated/prisma/client";
 import {
@@ -57,8 +53,7 @@ export function RecipeIngredientPicker({
       return;
     }
     startTransition(async () => {
-      const outcome =
-        pick.kind === "OFF" ? await saveOffFoodAction(pick.result) : await saveUsdaFoodAction(pick.result);
+      const outcome = await saveOffFoodAction(pick.result);
       if (outcome.ok) {
         onPicked(outcome.data, 100);
         onOpenChange(false);

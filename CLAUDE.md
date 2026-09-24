@@ -11,19 +11,20 @@ Funcionalidad principal:
 
 ## Modelo de datos: orígenes de alimentos
 
-Un alimento puede provenir de tres fuentes distintas que conviven en el mismo modelo:
+Un alimento puede provenir de dos fuentes que conviven en el mismo modelo:
 
-1. **Open Food Facts (OFF)** — productos envasados con código de barras.
+1. **Open Food Facts (OFF)** — productos envasados con código de barras, y única fuente externa activa para búsqueda.
    - API pública, sin API key.
    - Rate limits: 100 req/min para lookup por barcode, 10 req/min para búsqueda por texto.
-2. **USDA FoodData Central (FDC)** — alimentos genéricos sin barcode (frutas, verduras, preparaciones comunes). Incluye Foundation Foods, SR Legacy y FNDDS.
-   - Requiere API key gratuita.
-   - Rate limit: 1000 req/hora.
-3. **Manual** — alimentos cargados a mano por el usuario cuando no aparecen en OFF ni en USDA.
+2. **Manual** — alimentos cargados a mano por el usuario cuando no aparecen en OFF.
 
 Todo alimento debe persistir:
 - Su **origen** (`OFF` | `USDA` | `MANUAL`).
-- Su **ID externo** cuando aplica (barcode para OFF, `fdcId` para USDA). Los manuales no tienen ID externo.
+- Su **ID externo** cuando aplica (barcode para OFF). Los manuales no tienen ID externo.
+
+Como al usuario le da igual de dónde vino un alimento, el origen nunca se muestra en el frontend (ni como badge ni de ninguna otra forma) — es un dato interno.
+
+> Nota: `USDA` sigue existiendo como valor del enum `FoodSource` porque hay alimentos reales ya guardados con ese origen (de cuando era una fuente activa). No se migran ni se borran; simplemente ya no se puede crear ninguno nuevo desde la UI.
 
 ### Recetas
 

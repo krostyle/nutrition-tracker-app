@@ -27,10 +27,9 @@ import {
   listFoodsAction,
   lookupBarcodeAction,
   saveOffFoodAction,
-  saveUsdaFoodAction,
   searchFoodsAction,
   type ExternalFoodResult,
-  type SearchFoodsResult,
+  type SourceSearchResult,
 } from "@/lib/food-sources/actions";
 import type { ManualFoodInput } from "@/lib/food-sources/persist";
 import { searchLocalFoodsAction } from "@/lib/nutrition/actions";
@@ -97,7 +96,6 @@ function BarcodeTab() {
             <FoodResultCard
               key={result.externalId}
               result={result}
-              source="OFF"
               onSave={() => saveOffFoodAction(result)}
               defaultOpen
             />
@@ -114,42 +112,25 @@ function BarcodeTab() {
   );
 }
 
-const SOURCE_LABELS: Record<"OFF" | "USDA", string> = {
-  OFF: "Open Food Facts",
-  USDA: "USDA FoodData Central",
-};
-
-function MergedSearchResults({ results }: { results: SearchFoodsResult }) {
-  const unavailable: ("OFF" | "USDA")[] = [];
-  const items: { result: ExternalFoodResult; source: "OFF" | "USDA" }[] = [];
-
-  (["OFF", "USDA"] as const).forEach((source) => {
-    const state = results[source === "OFF" ? "off" : "usda"];
-    if (!state.ok) {
-      unavailable.push(source);
-      return;
-    }
-    items.push(...state.results.map((result) => ({ result, source })));
-  });
+function MergedSearchResults({ results }: { results: SourceSearchResult }) {
+  if (!results.ok) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Open Food Facts no está disponible en este momento.
+      </p>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-3">
-      {unavailable.map((source) => (
-        <p key={source} className="text-sm text-muted-foreground">
-          {SOURCE_LABELS[source]} no está disponible en este momento.
-        </p>
-      ))}
-      {items.length === 0 ? (
+      {results.results.length === 0 ? (
         <p className="text-sm text-muted-foreground">Sin resultados.</p>
       ) : (
-        items.map(({ result, source }) => (
+        results.results.map((result) => (
           <FoodResultCard
-            key={`${source}-${result.externalId}`}
+            key={result.externalId}
             result={result}
-            source={source}
-            onSave={() =>
-              source === "OFF" ? saveOffFoodAction(result) : saveUsdaFoodAction(result)
-            }
+            onSave={() => saveOffFoodAction(result)}
           />
         ))
       )}
@@ -185,7 +166,7 @@ function SearchResultsSkeleton() {
 function SearchTab() {
   const [query, setQuery] = useState("");
   const [pending, startTransition] = useTransition();
-  const [results, setResults] = useState<SearchFoodsResult | null>(null);
+  const [results, setResults] = useState<SourceSearchResult | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function runSearch(term: string) {

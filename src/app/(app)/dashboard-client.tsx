@@ -15,6 +15,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import {
+  Apple,
   Coffee,
   Cookie,
   Moon,
@@ -43,6 +44,7 @@ import {
 import {
   deleteLogEntryAction,
   getDaySummaryAction,
+  getEnabledMealTypesAction,
   updateLogEntryMealTypeAction,
   updateLogEntryQuantityAction,
   type DaySummary,
@@ -59,20 +61,24 @@ import { getRecipeDetailAction } from "@/lib/nutrition/recipe-actions";
 import type { MealType } from "@/generated/prisma/client";
 import { MealFoodPicker } from "./meal-food-picker";
 
-const MEAL_TYPES: MealType[] = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"];
+// Orden fijo de día completo — la configuración de Nutrición decide cuáles
+// de estas se muestran, pero el orden entre las elegidas siempre es este.
+const MEAL_TYPES: MealType[] = ["BREAKFAST", "SNACK", "LUNCH", "SNACK2", "DINNER"];
 
 const MEAL_META: Record<MealType, { label: string; icon: typeof Coffee; tint: TabTint }> = {
   BREAKFAST: { label: "Desayuno", icon: Coffee, tint: "amber" },
+  SNACK: { label: "Snack 1", icon: Cookie, tint: "rose" },
   LUNCH: { label: "Almuerzo", icon: Sun, tint: "emerald" },
+  SNACK2: { label: "Snack 2", icon: Apple, tint: "blue" },
   DINNER: { label: "Cena", icon: Moon, tint: "violet" },
-  SNACK: { label: "Snack", icon: Cookie, tint: "rose" },
 };
 
 const MEAL_LABELS: Record<MealType, string> = {
   BREAKFAST: "Desayuno",
+  SNACK: "Snack 1",
   LUNCH: "Almuerzo",
+  SNACK2: "Snack 2",
   DINNER: "Cena",
-  SNACK: "Snack",
 };
 
 const WEEKDAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
@@ -609,6 +615,7 @@ function DashboardSkeleton() {
 export function DashboardClient() {
   const [dateKey, setDateKey] = useState(todayDateKey());
   const [summary, setSummary] = useState<DaySummary | null>(null);
+  const [enabledMealTypes, setEnabledMealTypes] = useState<MealType[] | null>(null);
   const [openMealType, setOpenMealType] = useState<MealType | null>(null);
   const [activeEntry, setActiveEntry] = useState<LogEntryDisplay | null>(null);
   const [pending, startTransition] = useTransition();
@@ -632,13 +639,19 @@ export function DashboardClient() {
   }
 
   useEffect(() => {
+    getEnabledMealTypesAction().then(setEnabledMealTypes);
+  }, []);
+
+  useEffect(() => {
     refreshDay();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateKey]);
 
-  if (!summary) {
+  if (!summary || !enabledMealTypes) {
     return <DashboardSkeleton />;
   }
+
+  const visibleMealTypes = MEAL_TYPES.filter((mt) => enabledMealTypes.includes(mt));
 
   function handleDragStart(event: DragStartEvent) {
     const id = event.active.id as string;
@@ -706,7 +719,7 @@ export function DashboardClient() {
         onDragCancel={() => setActiveEntry(null)}
       >
         <div className="flex flex-col gap-3">
-          {MEAL_TYPES.map((mealType) => (
+          {visibleMealTypes.map((mealType) => (
             <MealSection
               key={mealType}
               mealType={mealType}

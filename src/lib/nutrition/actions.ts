@@ -17,9 +17,10 @@ import {
   updateLogEntryQuantity,
   type FoodLogEntryWithDetails,
 } from "./log-entries";
+import { getEnabledMealTypes, saveEnabledMealTypes } from "./meal-settings";
 import { calculateRecipeNutrients } from "./recipe";
 
-const MEAL_TYPES: MealType[] = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"];
+const MEAL_TYPES: MealType[] = ["BREAKFAST", "LUNCH", "DINNER", "SNACK", "SNACK2"];
 
 export type LogEntryDisplay = FoodLogEntryWithDetails & { calories: number };
 
@@ -119,6 +120,22 @@ export async function getWeekSummaryAction(weekStartKey: string): Promise<WeekSu
 
 export async function getGoalAction(): Promise<Goal | null> {
   return getGoal();
+}
+
+export async function getEnabledMealTypesAction(): Promise<MealType[]> {
+  return getEnabledMealTypes();
+}
+
+export async function saveEnabledMealTypesAction(
+  enabled: MealType[],
+): Promise<ActionResult<MealType[]>> {
+  if (enabled.length === 0) {
+    return { ok: false, message: "Debes elegir al menos una comida." };
+  }
+  return runAction(
+    () => saveEnabledMealTypes(enabled),
+    "No pudimos guardar la configuración. Prueba de nuevo.",
+  );
 }
 
 export type CreateEntryActionInput = {

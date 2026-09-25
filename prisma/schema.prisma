@@ -24,6 +24,7 @@ enum MealType {
   LUNCH
   DINNER
   SNACK
+  SNACK2
 }
 
 enum Sex {
@@ -82,6 +83,13 @@ model Goal {
   carbs     Float
   fat       Float
   updatedAt DateTime @updatedAt
+}
+
+// Comidas activas, single-user: una única fila con id fijo "singleton".
+model MealSettings {
+  id        String     @id
+  enabled   MealType[]
+  updatedAt DateTime   @updatedAt
 }
 
 // Perfil vigente, single-user: una única fila con id fijo "singleton".

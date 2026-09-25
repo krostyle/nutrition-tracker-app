@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { Calculator, Flag, Ruler, Target } from "lucide-react";
+import { Calculator, Flag, Ruler, Target, UtensilsCrossed } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   TabIconBadge,
@@ -24,7 +25,11 @@ import {
   floatingTabListClass,
   floatingTabTriggerClass,
 } from "@/components/ui/floating-tab-bar";
-import { getGoalAction } from "@/lib/nutrition/actions";
+import {
+  getEnabledMealTypesAction,
+  getGoalAction,
+  saveEnabledMealTypesAction,
+} from "@/lib/nutrition/actions";
 import { todayDateKey } from "@/lib/nutrition/date";
 import {
   applyRecommendationAsGoalAction,
@@ -35,7 +40,7 @@ import {
   saveProfileAction,
   type RecommendationResult,
 } from "@/lib/nutrition/profile-actions";
-import type { BodyMeasurement, Goal, GoalType, Profile } from "@/generated/prisma/client";
+import type { BodyMeasurement, Goal, GoalType, MealType, Profile } from "@/generated/prisma/client";
 
 function round(n: number) {
   return Math.round(n * 10) / 10;
@@ -514,6 +519,79 @@ function MeasurementsTab({
   );
 }
 
+const MEAL_OPTIONS: { value: MealType; label: string }[] = [
+  { value: "BREAKFAST", label: "Desayuno" },
+  { value: "SNACK", label: "Snack 1" },
+  { value: "LUNCH", label: "Almuerzo" },
+  { value: "SNACK2", label: "Snack 2" },
+  { value: "DINNER", label: "Cena" },
+];
+
+function MealsTab() {
+  const [enabled, setEnabled] = useState<MealType[] | null>(null);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    getEnabledMealTypesAction().then(setEnabled);
+  }, []);
+
+  function toggle(mealType: MealType, checked: boolean) {
+    setEnabled((prev) => {
+      if (!prev) return prev;
+      return checked ? [...prev, mealType] : prev.filter((m) => m !== mealType);
+    });
+    setSaved(false);
+  }
+
+  function save() {
+    if (!enabled) return;
+    setError(null);
+    startTransition(async () => {
+      const outcome = await saveEnabledMealTypesAction(enabled);
+      if (outcome.ok) {
+        setEnabled(outcome.data);
+        setSaved(true);
+      } else {
+        setError(outcome.message);
+      }
+    });
+  }
+
+  if (!enabled) {
+    return <Skeleton className="h-56 w-full max-w-sm" />;
+  }
+
+  return (
+    <div className="flex max-w-sm flex-col gap-5">
+      <p className="text-sm text-muted-foreground">
+        Elige qué comidas quieres registrar. Se muestran en el dashboard en este orden.
+      </p>
+      <div className="flex flex-col divide-y divide-border rounded-lg border">
+        {MEAL_OPTIONS.map(({ value, label }) => (
+          <label
+            key={value}
+            htmlFor={`meal-${value}`}
+            className="flex items-center justify-between gap-3 px-3 py-3 text-sm"
+          >
+            <span>{label}</span>
+            <Switch
+              id={`meal-${value}`}
+              checked={enabled.includes(value)}
+              onCheckedChange={(checked) => toggle(value, checked)}
+            />
+          </label>
+        ))}
+      </div>
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      <Button disabled={pending} onClick={save} className="self-start">
+        {pending ? "Guardando..." : saved ? "Guardado" : "Guardar"}
+      </Button>
+    </div>
+  );
+}
+
 export function NutritionClient() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
@@ -557,6 +635,7 @@ export function NutritionClient() {
             <TabsTrigger value="recomendacion">Recomendación</TabsTrigger>
             <TabsTrigger value="objetivo">Objetivo</TabsTrigger>
             <TabsTrigger value="progreso">Progreso</TabsTrigger>
+            <TabsTrigger value="comidas">Comidas</TabsTrigger>
           </TabsList>
         </div>
 
@@ -571,6 +650,9 @@ export function NutritionClient() {
         </TabsContent>
         <TabsContent value="progreso" className="pt-5 pb-28 sm:pb-0">
           <MeasurementsTab profile={profile} onSaved={handleChanged} />
+        </TabsContent>
+        <TabsContent value="comidas" className="pt-5 pb-28 sm:pb-0">
+          <MealsTab />
         </TabsContent>
 
         <div className="fixed inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 flex justify-center px-4 sm:hidden">
@@ -595,6 +677,10 @@ export function NutritionClient() {
             <TabsTrigger value="progreso" className={floatingTabTriggerClass}>
               <TabIconBadge tint="violet" icon={Ruler} />
               <span className={floatingTabLabelClass}>Progreso</span>
+            </TabsTrigger>
+            <TabsTrigger value="comidas" className={floatingTabTriggerClass}>
+              <TabIconBadge tint="rose" icon={UtensilsCrossed} />
+              <span className={floatingTabLabelClass}>Comidas</span>
             </TabsTrigger>
           </TabsList>
         </div>

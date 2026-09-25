@@ -202,6 +202,8 @@ const CLICK_MOVE_THRESHOLD = 6;
 const SWIPE_START_THRESHOLD = 10;
 const SWIPE_MAX = 96;
 const SWIPE_DELETE_THRESHOLD = 64;
+const SWIPE_EXIT_OFFSET = 1000;
+const SWIPE_EXIT_DURATION_MS = 200;
 
 type PointerTrack = {
   pointerId: number;
@@ -215,10 +217,12 @@ function EntryRow({
   entry,
   mealType,
   onChanged,
+  onDeleted,
 }: {
   entry: LogEntryDisplay;
   mealType: MealType;
   onChanged: () => void;
+  onDeleted: (id: string, mealType: MealType) => void;
 }) {
   const isRecipe = Boolean(entry.recipe);
   const name = entry.food?.name ?? entry.recipe?.name ?? "";
@@ -233,6 +237,7 @@ function EntryRow({
   const [error, setError] = useState<string | null>(null);
   const [swipeX, setSwipeX] = useState(0);
   const [isSwipingActive, setIsSwipingActive] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
   const [wasDragging, setWasDragging] = useState(false);
   const trackRef = useRef<PointerTrack | null>(null);
   const movedRef = useRef(false);
@@ -285,15 +290,19 @@ function EntryRow({
 
   function remove() {
     setError(null);
+    setDialogOpen(false);
+    setIsSwipingActive(false);
+    setIsRemoving(true);
+    // Saca la fila de la lista apenas termina de deslizarse fuera de la
+    // pantalla, sin esperar la respuesta del servidor — la llamada real
+    // corre en paralelo y solo se usa para revertir si falla.
+    window.setTimeout(() => onDeleted(entry.id, mealType), SWIPE_EXIT_DURATION_MS);
     startTransition(async () => {
-      const outcome = await deleteLogEntryAction(entry.id);
-      if (outcome.ok) {
-        setDialogOpen(false);
-        onChanged();
-      } else {
-        setSwipeX(0);
-        setError(outcome.message);
-      }
+      // Si falla, no hay dónde mostrar el error (la fila ya se sacó de la
+      // lista) — onChanged() vuelve a traer el día completo, lo que
+      // restaura la entrada si en realidad no se pudo borrar.
+      await deleteLogEntryAction(entry.id);
+      onChanged();
     });
   }
 
@@ -381,13 +390,20 @@ function EntryRow({
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerCancel}
           onClick={handleClick}
-          style={swipeX ? { transform: `translateX(${swipeX}px)` } : undefined}
+          style={{
+            transform: isRemoving
+              ? `translateX(-${SWIPE_EXIT_OFFSET}px)`
+              : swipeX
+                ? `translateX(${swipeX}px)`
+                : undefined,
+          }}
           className={cn(
             "relative z-10 flex cursor-pointer touch-none items-start gap-1 bg-card py-2.5 select-none group-first:pt-0 group-last:pb-0",
             isSwipingActive
               ? "transition-opacity duration-150"
               : "transition-[opacity,transform] duration-200 ease-out",
             isDragging && "opacity-40",
+            isRemoving && "opacity-0",
           )}
         >
           <div className="min-w-0 flex-1 text-sm">
@@ -441,11 +457,13 @@ function MealSection({
   entries,
   onAdd,
   onChanged,
+  onDeleted,
 }: {
   mealType: MealType;
   entries: LogEntryDisplay[];
   onAdd: () => void;
   onChanged: () => void;
+  onDeleted: (id: string, mealType: MealType) => void;
 }) {
   const meta = MEAL_META[mealType];
   const { setNodeRef, isOver } = useDroppable({ id: mealType });
@@ -475,7 +493,13 @@ function MealSection({
       {entries.length ? (
         <div className="flex flex-col divide-y divide-border">
           {entries.map((entry) => (
-            <EntryRow key={entry.id} entry={entry} mealType={mealType} onChanged={onChanged} />
+            <EntryRow
+              key={entry.id}
+              entry={entry}
+              mealType={mealType}
+              onChanged={onChanged}
+              onDeleted={onDeleted}
+            />
           ))}
         </div>
       ) : (
@@ -651,6 +675,19 @@ export function DashboardClient() {
     });
   }
 
+  function handleEntryDeleted(id: string, mealType: MealType) {
+    setSummary((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        entriesByMeal: {
+          ...prev.entriesByMeal,
+          [mealType]: prev.entriesByMeal[mealType].filter((e) => e.id !== id),
+        },
+      };
+    });
+  }
+
   return (
     <div className="flex w-full max-w-2xl flex-col gap-6">
       <WeekStrip
@@ -676,6 +713,7 @@ export function DashboardClient() {
               entries={summary.entriesByMeal[mealType]}
               onAdd={() => setOpenMealType(mealType)}
               onChanged={refreshDay}
+              onDeleted={handleEntryDeleted}
             />
           ))}
         </div>

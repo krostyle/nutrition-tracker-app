@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Card,
   CardContent,
@@ -366,7 +367,8 @@ function ManualTab() {
       </div>
 
       <Button type="submit" disabled={!canSubmit || pending}>
-        {pending ? "Guardando..." : "Guardar alimento"}
+        {pending && <Spinner className="size-4" />}
+        {pending ? "Guardando" : "Guardar alimento"}
       </Button>
     </form>
   );

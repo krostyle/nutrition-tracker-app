@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   TabIconBadge,
@@ -84,7 +85,12 @@ export function RecipeIngredientPicker({
         </DialogHeader>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
-        {pending && <p className="text-sm text-muted-foreground">Guardando...</p>}
+        {pending && (
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Spinner className="size-4" />
+            Guardando...
+          </p>
+        )}
 
         <Tabs defaultValue="search">
           <div className="hidden sm:block">

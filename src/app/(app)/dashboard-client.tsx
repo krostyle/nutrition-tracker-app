@@ -35,6 +35,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 import { TabIconBadge, type TabTint } from "@/components/ui/floating-tab-bar";
 import {
   FoodNutritionDetail,
@@ -440,17 +441,21 @@ function EntryRow({
               footer={(finalQuantity) => (
                 <div className="flex items-center justify-between gap-2">
                   <Button variant="destructive" size="sm" disabled={pending} onClick={remove}>
-                    <Trash2 className="size-4" />
+                    {pending ? <Spinner className="size-4" /> : <Trash2 className="size-4" />}
                     Eliminar
                   </Button>
                   <Button size="sm" disabled={pending || !finalQuantity} onClick={() => save(finalQuantity)}>
-                    {pending ? "Guardando..." : "Guardar"}
+                    {pending && <Spinner className="size-4" />}
+                    {pending ? "Guardando" : "Guardar"}
                   </Button>
                 </div>
               )}
             />
           ) : (
-            <p className="text-sm text-muted-foreground">Cargando...</p>
+            <p className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Spinner className="size-4" />
+              Cargando...
+            </p>
           )}
         </DialogContent>
       </Dialog>
@@ -757,7 +762,12 @@ export function DashboardClient() {
         />
       )}
 
-      {pending && <p className="text-center text-xs text-muted-foreground">Actualizando...</p>}
+      {pending && (
+        <p className="flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
+          <Spinner className="size-3" />
+          Actualizando...
+        </p>
+      )}
     </div>
   );
 }

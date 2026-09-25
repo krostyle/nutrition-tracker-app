@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -170,7 +171,8 @@ function RecommendationTab({ onApplied }: { onApplied: () => void }) {
           <p className="text-sm text-muted-foreground">Esta es tu meta actual.</p>
         ) : (
           <Button disabled={pending} onClick={apply} className="self-start">
-            {pending ? "Aplicando..." : "Aplicar como meta"}
+            {pending && <Spinner className="size-4" />}
+            {pending ? "Aplicando" : "Aplicar como meta"}
           </Button>
         )}
         {error && <p className="text-sm text-destructive">{error}</p>}
@@ -313,7 +315,8 @@ function ObjectiveTab({
       </div>
 
       <Button type="submit" disabled={pending}>
-        {pending ? "Guardando..." : saved ? "Guardado" : "Guardar"}
+        {pending && <Spinner className="size-4" />}
+        {pending ? "Guardando" : saved ? "Guardado" : "Guardar"}
       </Button>
     </form>
   );
@@ -419,7 +422,8 @@ function AddMeasurementDialog({
             </div>
           )}
           <Button type="submit" disabled={!canSubmit || pending}>
-            {pending ? "Guardando..." : "Agregar medición"}
+            {pending && <Spinner className="size-4" />}
+            {pending ? "Guardando" : "Agregar medición"}
           </Button>
         </form>
       </DialogContent>
@@ -586,7 +590,8 @@ function MealsTab() {
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button disabled={pending} onClick={save} className="self-start">
-        {pending ? "Guardando..." : saved ? "Guardado" : "Guardar"}
+        {pending && <Spinner className="size-4" />}
+        {pending ? "Guardando" : saved ? "Guardado" : "Guardar"}
       </Button>
     </div>
   );

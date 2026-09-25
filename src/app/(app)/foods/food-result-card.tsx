@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Dialog,
   DialogContent,
@@ -71,7 +72,8 @@ export function FoodResultCard({
             </Button>
           ) : (
             <Button size="sm" disabled={pending} onClick={handleSave}>
-              {pending ? "Guardando..." : "Guardar"}
+              {pending && <Spinner className="size-4" />}
+              {pending ? "Guardando" : "Guardar"}
             </Button>
           )}
           {error && <p className="text-xs text-destructive">{error}</p>}
@@ -97,7 +99,8 @@ export function FoodResultCard({
             </Button>
           ) : (
             <Button disabled={pending} className="w-full" onClick={handleSave}>
-              {pending ? "Guardando..." : "Guardar"}
+              {pending && <Spinner className="size-4" />}
+              {pending ? "Guardando" : "Guardar"}
             </Button>
           )}
           {error && <p className="text-xs text-destructive">{error}</p>}

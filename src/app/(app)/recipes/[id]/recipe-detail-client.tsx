@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 import { MacroHero } from "../../foods/nutrition-facts";
 import { deleteRecipeAction, getRecipeDetailAction, type RecipeDetail } from "@/lib/nutrition/recipe-actions";
 
@@ -80,7 +81,7 @@ export function RecipeDetailClient({ id }: { id: string }) {
             disabled={pending}
             onClick={handleDelete}
           >
-            <Trash2 className="size-4" />
+            {pending ? <Spinner className="size-4" /> : <Trash2 className="size-4" />}
           </Button>
         </div>
       </div>

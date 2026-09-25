@@ -5,6 +5,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 import type { Food } from "@/generated/prisma/client";
 import type { RecipeIngredientInput, RecipeInput } from "@/lib/nutrition/recipes-repo";
 import { RecipeIngredientPicker } from "./recipe-ingredient-picker";
@@ -150,7 +151,8 @@ export function RecipeForm({
         {error && <p className="text-sm text-destructive">{error}</p>}
 
         <Button type="submit" disabled={!canSubmit || pending} className="mt-1">
-          {pending ? "Guardando..." : submitLabel}
+          {pending && <Spinner className="size-4" />}
+          {pending ? "Guardando" : submitLabel}
         </Button>
       </form>
       <RecipeIngredientPicker open={pickerOpen} onOpenChange={setPickerOpen} onPicked={addIngredient} />

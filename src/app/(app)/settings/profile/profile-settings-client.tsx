@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 import { getProfileAction, saveProfileAction } from "@/lib/nutrition/profile-actions";
 import type { ActivityLevel, Profile, Sex } from "@/generated/prisma/client";
 
@@ -209,7 +210,8 @@ export function ProfileSettingsClient() {
           </div>
 
           <Button type="submit" disabled={!canSubmit || pending} className="mt-1">
-            {pending ? "Guardando..." : saved ? "Guardado" : "Guardar"}
+            {pending && <Spinner className="size-4" />}
+            {pending ? "Guardando" : saved ? "Guardado" : "Guardar"}
           </Button>
         </form>
       )}

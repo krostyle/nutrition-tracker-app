@@ -7,6 +7,7 @@ import { BarcodeCameraScanner } from "@/components/barcode-camera-scanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 import {
   listFoodsAction,
   lookupBarcodeAction,
@@ -199,7 +200,12 @@ export function BarcodePickerTab({ onSelect }: { onSelect: (pick: FoodPick) => v
         />
       ) : (
         <>
-          {pending && <p className="text-sm text-muted-foreground">Buscando...</p>}
+          {pending && (
+            <p className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Spinner className="size-4" />
+              Buscando...
+            </p>
+          )}
           {!pending && notFound && (
             <p className="text-sm text-muted-foreground">
               No se encontró en Open Food Facts. Puedes cargarlo en la pestaña &quot;Manual&quot;.
@@ -290,7 +296,8 @@ export function ManualPickerTab({
         />
       </div>
       <Button type="submit" disabled={!canSubmit || pending}>
-        {pending ? "Guardando..." : submitLabel}
+        {pending && <Spinner className="size-4" />}
+        {pending ? "Guardando" : submitLabel}
       </Button>
     </form>
   );

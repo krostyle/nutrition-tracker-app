@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Barcode, ChefHat, Search, SquarePen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Dialog,
   DialogContent,
@@ -99,7 +100,8 @@ function ConfirmQuantityFooter({
             disabled={pending || !finalQuantity}
             onClick={() => onConfirm(finalQuantity)}
           >
-            {pending ? "Agregando..." : "Agregar"}
+            {pending && <Spinner className="size-4" />}
+            {pending ? "Agregando" : "Agregar"}
           </Button>
         )}
       />
@@ -139,7 +141,10 @@ function RecipesPickerTab({
       <div className="max-h-60 overflow-hidden rounded-lg border">
         <div className="flex max-h-60 flex-col overflow-y-auto">
           {recipes === null ? (
-            <p className="p-2 text-sm text-muted-foreground">Cargando...</p>
+            <p className="flex items-center gap-2 p-2 text-sm text-muted-foreground">
+              <Spinner className="size-4" />
+              Cargando...
+            </p>
           ) : recipes.length === 0 ? (
             <p className="p-2 text-sm text-muted-foreground">Todavía no creaste recetas.</p>
           ) : (
@@ -152,8 +157,12 @@ function RecipesPickerTab({
                 className="flex items-center justify-between gap-2 border-b px-2 py-2 text-left text-sm last:border-b-0 hover:bg-muted disabled:opacity-50"
               >
                 <span className="min-w-0 flex-1 truncate font-medium">{recipe.name}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">
-                  {loadingId === recipe.id ? "Cargando..." : `${recipe.servings} porciones`}
+                <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+                  {loadingId === recipe.id ? (
+                    <Spinner className="size-3" />
+                  ) : (
+                    `${recipe.servings} porciones`
+                  )}
                 </span>
               </button>
             ))

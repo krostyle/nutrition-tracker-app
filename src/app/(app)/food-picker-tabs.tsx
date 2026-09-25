@@ -25,11 +25,13 @@ const SEARCH_DEBOUNCE_MS = 800;
 const LOCAL_DEBOUNCE_MS = 400;
 
 // Un alimento elegido desde cualquier fuente. "existing" ya es un Food
-// persistido; "OFF" todavía no existe en la BD — quien use este picker
-// decide si/cuándo guardarlo (ver saveOffFoodAction).
+// persistido; el resultado externo (de OFF o USDA) todavía no existe en
+// la BD — quien use este picker decide si/cuándo guardarlo (ver
+// saveExternalFoodAction). `kind` refleja la fuente real del resultado,
+// aunque nunca se muestre en el frontend.
 export type FoodPick =
   | { kind: "existing"; foodId: string; food: Food }
-  | { kind: "OFF"; result: ExternalFoodResult };
+  | { kind: "OFF" | "USDA"; result: ExternalFoodResult };
 
 export function FoodResultRow({
   name,
@@ -64,11 +66,11 @@ export function UnifiedFoodPickerTab({
 }) {
   const [query, setQuery] = useState("");
   const [savedFoods, setSavedFoods] = useState<Food[]>([]);
-  const [offItems, setOffItems] = useState<ExternalFoodResult[]>([]);
-  const [offNote, setOffNote] = useState<string | null>(null);
-  const [offLoading, startOffTransition] = useTransition();
+  const [externalItems, setExternalItems] = useState<ExternalFoodResult[]>([]);
+  const [externalNote, setExternalNote] = useState<string | null>(null);
+  const [externalLoading, startExternalTransition] = useTransition();
   const localDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const offDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const externalDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function loadLocal(term: string) {
     const trimmed = term.trim();
@@ -76,15 +78,15 @@ export function UnifiedFoodPickerTab({
     promise.then(setSavedFoods);
   }
 
-  function runOffSearch(term: string) {
-    startOffTransition(async () => {
+  function runExternalSearch(term: string) {
+    startExternalTransition(async () => {
       const results = await searchFoodsAction(term.trim());
       if (results.ok) {
-        setOffItems(results.results);
-        setOffNote(null);
+        setExternalItems(results.results);
+        setExternalNote(null);
       } else {
-        setOffItems([]);
-        setOffNote("Open Food Facts no está disponible en este momento.");
+        setExternalItems([]);
+        setExternalNote("Open Food Facts no está disponible en este momento.");
       }
     });
   }
@@ -99,16 +101,16 @@ export function UnifiedFoodPickerTab({
     if (localDebounceRef.current) clearTimeout(localDebounceRef.current);
     localDebounceRef.current = setTimeout(() => loadLocal(value), LOCAL_DEBOUNCE_MS);
 
-    if (offDebounceRef.current) clearTimeout(offDebounceRef.current);
+    if (externalDebounceRef.current) clearTimeout(externalDebounceRef.current);
     if (value.trim().length < MIN_QUERY_LENGTH) {
-      setOffItems([]);
-      setOffNote(null);
+      setExternalItems([]);
+      setExternalNote(null);
       return;
     }
-    offDebounceRef.current = setTimeout(() => runOffSearch(value), SEARCH_DEBOUNCE_MS);
+    externalDebounceRef.current = setTimeout(() => runExternalSearch(value), SEARCH_DEBOUNCE_MS);
   }
 
-  const hasResults = savedFoods.length > 0 || offItems.length > 0;
+  const hasResults = savedFoods.length > 0 || externalItems.length > 0;
 
   return (
     <div className="flex flex-col gap-2">
@@ -128,21 +130,23 @@ export function UnifiedFoodPickerTab({
               onSelect={() => onSelect({ kind: "existing", foodId: food.id, food })}
             />
           ))}
-          {offLoading && (
+          {externalLoading && (
             <p className="p-2 text-sm text-muted-foreground">Buscando en Open Food Facts...</p>
           )}
-          {!offLoading && offNote && <p className="p-2 text-sm text-muted-foreground">{offNote}</p>}
-          {!offLoading &&
-            offItems.map((result) => (
+          {!externalLoading && externalNote && (
+            <p className="p-2 text-sm text-muted-foreground">{externalNote}</p>
+          )}
+          {!externalLoading &&
+            externalItems.map((result) => (
               <FoodResultRow
                 key={result.externalId}
                 name={result.name}
                 brand={result.brand}
                 values={result}
-                onSelect={() => onSelect({ kind: "OFF", result })}
+                onSelect={() => onSelect({ kind: result.source, result })}
               />
             ))}
-          {!offLoading && !hasResults && (
+          {!externalLoading && !hasResults && (
             <p className="p-2 text-sm text-muted-foreground">Sin resultados.</p>
           )}
         </div>
@@ -174,7 +178,7 @@ export function BarcodePickerTab({ onSelect }: { onSelect: (pick: FoodPick) => v
     startTransition(async () => {
       const lookup = await lookupBarcodeAction(rawCode.trim());
       if (lookup.status === "found") {
-        onSelect({ kind: "OFF", result: lookup.result });
+        onSelect({ kind: lookup.result.source, result: lookup.result });
       } else if (lookup.status === "not_found") {
         setNotFound(true);
         setCode("");

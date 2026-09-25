@@ -11,20 +11,21 @@ Funcionalidad principal:
 
 ## Modelo de datos: orígenes de alimentos
 
-Un alimento puede provenir de dos fuentes que conviven en el mismo modelo:
+Un alimento puede provenir de tres fuentes que conviven en el mismo modelo:
 
-1. **Open Food Facts (OFF)** — productos envasados con código de barras, y única fuente externa activa para búsqueda.
+1. **Open Food Facts (OFF)** — productos envasados con código de barras, y fuente primaria para búsqueda por nombre (siempre se consulta).
    - API pública, sin API key.
    - Rate limits: 100 req/min para lookup por barcode, 10 req/min para búsqueda por texto.
-2. **Manual** — alimentos cargados a mano por el usuario cuando no aparecen en OFF.
+2. **USDA FoodData Central (FDC)** — alimentos genéricos sin marca (frutas, verduras, granos, carnes básicas). Solo se consulta cuando el término buscado tiene traducción conocida al inglés (ver `src/lib/food-sources/usda/search-terms.ts`), porque USDA busca únicamente en inglés y el usuario escribe en español.
+   - Requiere API key gratuita (`USDA_FDC_API_KEY`).
+   - Rate limit: 1000 req/hora.
+3. **Manual** — alimentos cargados a mano por el usuario cuando no aparecen en OFF ni en USDA.
 
 Todo alimento debe persistir:
 - Su **origen** (`OFF` | `USDA` | `MANUAL`).
-- Su **ID externo** cuando aplica (barcode para OFF). Los manuales no tienen ID externo.
+- Su **ID externo** cuando aplica (barcode para OFF, `fdcId` para USDA). Los manuales no tienen ID externo.
 
-Como al usuario le da igual de dónde vino un alimento, el origen nunca se muestra en el frontend (ni como badge ni de ninguna otra forma) — es un dato interno.
-
-> Nota: `USDA` sigue existiendo como valor del enum `FoodSource` porque hay alimentos reales ya guardados con ese origen (de cuando era una fuente activa). No se migran ni se borran; simplemente ya no se puede crear ninguno nuevo desde la UI.
+Como al usuario le da igual de dónde vino un alimento, el origen nunca se muestra en el frontend (ni como badge ni de ninguna otra forma) — es un dato interno, aunque se persiste correctamente según la fuente real de cada resultado.
 
 ### Recetas
 

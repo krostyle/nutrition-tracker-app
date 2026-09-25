@@ -31,7 +31,7 @@ import { BarcodePickerTab, ManualPickerTab, UnifiedFoodPickerTab } from "./food-
 
 type Candidate =
   | { kind: "existing"; foodId: string; food: Food }
-  | { kind: "OFF"; result: ExternalFoodResult }
+  | { kind: "OFF" | "USDA"; result: ExternalFoodResult }
   | { kind: "recipe"; recipeId: string; name: string; perServing: NutrientValues };
 
 function candidateName(candidate: Candidate): string {

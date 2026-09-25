@@ -20,7 +20,7 @@ import {
   floatingTabListClass,
   floatingTabTriggerClass,
 } from "@/components/ui/floating-tab-bar";
-import { createManualFoodAction, saveOffFoodAction } from "@/lib/food-sources/actions";
+import { createManualFoodAction, saveExternalFoodAction } from "@/lib/food-sources/actions";
 import type { ExternalFoodResult } from "@/lib/food-sources/actions";
 import type { ManualFoodInput } from "@/lib/food-sources/persist";
 import type { Food } from "@/generated/prisma/client";
@@ -32,7 +32,9 @@ import {
   type FoodPick,
 } from "../food-picker-tabs";
 
-type Candidate = { kind: "existing"; food: Food } | { kind: "OFF"; result: ExternalFoodResult };
+type Candidate =
+  | { kind: "existing"; food: Food }
+  | { kind: "OFF" | "USDA"; result: ExternalFoodResult };
 
 function candidateName(candidate: Candidate): string {
   return candidate.kind === "existing" ? candidate.food.name : candidate.result.name;
@@ -102,7 +104,7 @@ export function RecipeIngredientPicker({
       return;
     }
     startTransition(async () => {
-      const outcome = await saveOffFoodAction(candidate.result);
+      const outcome = await saveExternalFoodAction(candidate.result);
       if (outcome.ok) {
         onPicked(outcome.data, grams);
         reset();

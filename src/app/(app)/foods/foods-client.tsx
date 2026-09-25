@@ -27,7 +27,7 @@ import {
   createManualFoodAction,
   listFoodsAction,
   lookupBarcodeAction,
-  saveOffFoodAction,
+  saveExternalFoodAction,
   searchFoodsAction,
   type ExternalFoodResult,
   type SourceSearchResult,
@@ -97,7 +97,7 @@ function BarcodeTab() {
             <FoodResultCard
               key={result.externalId}
               result={result}
-              onSave={() => saveOffFoodAction(result)}
+              onSave={() => saveExternalFoodAction(result)}
               defaultOpen
             />
           )}
@@ -131,7 +131,7 @@ function MergedSearchResults({ results }: { results: SourceSearchResult }) {
           <FoodResultCard
             key={result.externalId}
             result={result}
-            onSave={() => saveOffFoodAction(result)}
+            onSave={() => saveExternalFoodAction(result)}
           />
         ))
       )}
@@ -167,10 +167,10 @@ function SearchResultsSkeleton() {
 function UnifiedFoodsTab() {
   const [query, setQuery] = useState("");
   const [savedFoods, setSavedFoods] = useState<Food[] | null>(null);
-  const [offResults, setOffResults] = useState<SourceSearchResult | null>(null);
-  const [offPending, startOffTransition] = useTransition();
+  const [externalResults, setExternalResults] = useState<SourceSearchResult | null>(null);
+  const [externalPending, startExternalTransition] = useTransition();
   const localDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const offDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const externalDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function loadLocal(term: string) {
     const trimmed = term.trim();
@@ -178,10 +178,10 @@ function UnifiedFoodsTab() {
     promise.then(setSavedFoods);
   }
 
-  function runOffSearch(term: string) {
-    startOffTransition(async () => {
+  function runExternalSearch(term: string) {
+    startExternalTransition(async () => {
       const results = await searchFoodsAction(term.trim());
-      setOffResults(results);
+      setExternalResults(results);
     });
   }
 
@@ -195,18 +195,18 @@ function UnifiedFoodsTab() {
     if (localDebounceRef.current) clearTimeout(localDebounceRef.current);
     localDebounceRef.current = setTimeout(() => loadLocal(value), MY_FOODS_DEBOUNCE_MS);
 
-    if (offDebounceRef.current) clearTimeout(offDebounceRef.current);
+    if (externalDebounceRef.current) clearTimeout(externalDebounceRef.current);
     if (value.trim().length < MIN_QUERY_LENGTH) {
-      setOffResults(null);
+      setExternalResults(null);
       return;
     }
-    offDebounceRef.current = setTimeout(() => runOffSearch(value), SEARCH_DEBOUNCE_MS);
+    externalDebounceRef.current = setTimeout(() => runExternalSearch(value), SEARCH_DEBOUNCE_MS);
   }
 
   useEffect(() => {
     return () => {
       if (localDebounceRef.current) clearTimeout(localDebounceRef.current);
-      if (offDebounceRef.current) clearTimeout(offDebounceRef.current);
+      if (externalDebounceRef.current) clearTimeout(externalDebounceRef.current);
     };
   }, []);
 
@@ -224,9 +224,11 @@ function UnifiedFoodsTab() {
           {savedFoods.map((food) => (
             <SavedFoodCard key={food.id} food={food} />
           ))}
-          {offPending && <SearchResultsSkeleton />}
-          {!offPending && offResults && <MergedSearchResults results={offResults} />}
-          {!offPending && !offResults && savedFoods.length === 0 && (
+          {externalPending && <SearchResultsSkeleton />}
+          {!externalPending && externalResults && (
+            <MergedSearchResults results={externalResults} />
+          )}
+          {!externalPending && !externalResults && savedFoods.length === 0 && (
             <p className="text-sm text-muted-foreground">
               {query.trim() ? "Sin resultados." : "Todavía no guardaste ningún alimento."}
             </p>

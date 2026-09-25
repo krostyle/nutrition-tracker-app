@@ -3,7 +3,7 @@ import type { Food } from "@/generated/prisma/client";
 import type { NormalizedNutrients } from "./types";
 
 export async function persistExternalFood(
-  source: "OFF",
+  source: "OFF" | "USDA",
   externalId: string,
   nutrients: NormalizedNutrients,
 ): Promise<Food> {

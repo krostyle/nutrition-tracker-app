@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { Camera } from "lucide-react";
 import { BarcodeCameraScanner } from "@/components/barcode-camera-scanner";
+import { useIsDesktop } from "@/hooks/use-is-desktop";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -160,31 +161,75 @@ export function UnifiedFoodPickerTab({
 }
 
 export function BarcodePickerTab({ onSelect }: { onSelect: (pick: FoodPick) => void }) {
+  const isDesktop = useIsDesktop();
   const [scanning, setScanning] = useState(true);
   const [pending, startTransition] = useTransition();
+  const [code, setCode] = useState("");
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function handleDetected(code: string) {
-    setScanning(false);
+  function runLookup(rawCode: string) {
     setNotFound(false);
     setError(null);
     startTransition(async () => {
-      const lookup = await lookupBarcodeAction(code.trim());
+      const lookup = await lookupBarcodeAction(rawCode.trim());
       if (lookup.status === "found") {
         onSelect({ kind: "OFF", result: lookup.result });
       } else if (lookup.status === "not_found") {
         setNotFound(true);
+        setCode("");
       } else {
         setError(lookup.message);
       }
     });
   }
 
+  function handleDetected(detectedCode: string) {
+    setScanning(false);
+    runLookup(detectedCode);
+  }
+
   function rescan() {
     setNotFound(false);
     setError(null);
     setScanning(true);
+  }
+
+  if (isDesktop) {
+    return (
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (code.trim()) runLookup(code);
+        }}
+        className="flex flex-col gap-3"
+      >
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="barcode-manual-code">Código de barra</Label>
+          <Input
+            id="barcode-manual-code"
+            autoFocus
+            value={code}
+            onChange={(e) => {
+              setCode(e.target.value);
+              setNotFound(false);
+              setError(null);
+            }}
+            placeholder="Escríbelo o pistoléalo con un lector"
+          />
+        </div>
+        <Button type="submit" disabled={pending || !code.trim()}>
+          {pending && <Spinner className="size-4" />}
+          {pending ? "Buscando" : "Buscar"}
+        </Button>
+        {!pending && notFound && (
+          <p className="text-sm text-muted-foreground">
+            No se encontró en Open Food Facts. Puedes cargarlo en la pestaña &quot;Manual&quot;.
+          </p>
+        )}
+        {!pending && error && <p className="text-sm text-destructive">{error}</p>}
+      </form>
+    );
   }
 
   return (

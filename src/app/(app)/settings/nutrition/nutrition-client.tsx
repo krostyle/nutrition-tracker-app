@@ -283,7 +283,7 @@ function ObjectiveTab({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-sm flex-col gap-5">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       <div className="flex flex-col gap-1.5">
@@ -568,7 +568,7 @@ function MealsTab() {
   }
 
   return (
-    <div className="flex max-w-sm flex-col gap-5">
+    <div className="flex flex-col gap-5">
       <p className="text-sm text-muted-foreground">
         Elige qué comidas quieres registrar. Se muestran en el dashboard en este orden.
       </p>

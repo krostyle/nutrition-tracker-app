@@ -115,7 +115,7 @@ export function ProfileSettingsClient() {
           ))}
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="flex max-w-sm flex-col gap-5">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           {error && <p className="text-sm text-destructive">{error}</p>}
 
           <div className="flex flex-col gap-1.5">
